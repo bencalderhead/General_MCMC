@@ -1,0 +1,65 @@
+********** MODEL NAME
+BCRABL_2
+
+********** MODEL NOTES
+
+
+********** MODEL STATES
+d/dt(BCRABL) = k2*pBCRABL - k1*BCRABL - k7*BCRABL*TKI + k8*TKIBCRABL - k13*BCRABL*pJAK2 + k14*pBCRABL*pJAK2
+d/dt(pBCRABL) = k1*BCRABL - k2*pBCRABL + k13*BCRABL*pJAK2 - k14*pBCRABL*pJAK2
+d/dt(JAK2) = k4*pJAK2 - k3*JAK2 - k9*JAK2*JAKI + k10*JAKIJAK2 - k15*pBCRABL*JAK2 + k16*pBCRABL*pJAK2
+d/dt(pJAK2) = k3*JAK2 - k4*pJAK2 + k15*pBCRABL*JAK2 - k16*pBCRABL*pJAK2
+d/dt(STAT5) = -k5*STAT5*pBCRABL - k6*STAT5*pJAK2 + k12*pSTAT5NUC
+d/dt(pSTAT5) = k5*STAT5*pBCRABL + k6*STAT5*pJAK2 - k11*pSTAT5
+d/dt(TKI) = -k7*BCRABL*TKI + k8*TKIBCRABL
+d/dt(JAKI) = -k9*JAK2*JAKI + k10*JAKIJAK2
+d/dt(TKIBCRABL) = k7*BCRABL*TKI - k8*TKIBCRABL
+d/dt(JAKIJAK2) = k9*JAK2*JAKI - k10*JAKIJAK2
+d/dt(pSTAT5NUC) = k11*pSTAT5 - k12*pSTAT5NUC
+
+
+BCRABL(0) = 1  
+pBCRABL(0) = 0     
+JAK2(0) = 1
+pJAK2(0) = 0
+STAT5(0) = 1
+pSTAT5(0) = 0
+TKI(0) = 0
+JAKI(0) = 0
+TKIBCRABL(0) = 0
+JAKIJAK2(0) = 0
+pSTAT5NUC(0) = 0
+
+
+********** MODEL PARAMETERS
+k1 = 1
+k2 = 1
+k3 = 1
+k4 = 1
+k5 = 1
+k6 = 1
+k7 = 1
+k8 = 1
+k9 = 1
+k10 = 1
+k11 = 1
+k12 = 1
+k13 = 1
+k14 = 1
+k15 = 1
+k16 = 1
+
+********** MODEL VARIABLES
+
+
+********** MODEL REACTIONS
+
+
+********** MODEL FUNCTIONS
+
+
+********** MODEL EVENTS
+
+
+********** MODEL MATLAB FUNCTIONS
+

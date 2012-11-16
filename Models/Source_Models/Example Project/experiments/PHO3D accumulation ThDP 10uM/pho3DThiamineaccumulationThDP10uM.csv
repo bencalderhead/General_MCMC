@@ -1,0 +1,19 @@
+% Measurement file generated: 12-Jul-2007
+
+[Name]
+pho3DThiamineaccumulationThDP10uM
+
+[Notes]
+Intracellular th in pho3D. o/n incubation w/o thiamine followed by 10uM thdp
+
+[Components]
+time,BCR_ABL,pBCR_ABL,JAK2,pJAK2,STAT5,pSTAT5,TKI,JAKI,TKI_BCR_ABL,JAKI_JAK2
+
+[Componentnotes]
+
+[Values]
+0.000000, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+5.000000, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+10.000000, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1;
+20.000000, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1;
+32.000000, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1;

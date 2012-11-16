@@ -1,0 +1,85 @@
+********** MODEL NAME
+SBLocke_2005b_Full
+
+********** MODEL NOTES
+
+
+********** MODEL STATES
+d/dt(LHYm) = (n1*Xn^a)/(g1^a + Xn^a) - (m1*LHYm)/(k1 + LHYm)   
+d/dt(LHYc) = p1*LHYm - r1*LHYc + r2*LHYn - (m2*LHYc)/(k2 + LHYc)
+d/dt(LHYn) = r1*LHYc - r2*LHYn - (m3*LHYn)/(k3 + LHYn)
+d/dt(TOC1m) = (n2*g2^b)/(g2^b + LHYn^b) - (m4*TOC1m)/(k4 + TOC1m)
+d/dt(TOC1c) = p2*TOC1m - r3*TOC1c + r4*TOC1n - (m5*TOC1c)/(k5 + TOC1c)
+d/dt(TOC1n) = r3*TOC1c - r4*TOC1n - (m6*TOC1n)/(k6 + TOC1n)
+d/dt(Xm) = (n3*TOC1n^c)/(g3^c + TOC1n^c) - (m7*Xm)/(k7 + Xm)
+d/dt(Xc) = p3*Xm - r5*Xc + r6*Xn - (m8*Xc)/(k8 + Xc)
+d/dt(Xn) = r5*Xc - r6*Xn - (m9*Xn)/(k9 + Xn)
+
+LHYm(0) = 0.0413
+LHYc(0) = 0.0156     
+LHYn(0) = 0.1139
+TOC1m(0) = 2.0894
+TOC1c(0) = 8.0616
+TOC1n(0) = 1.1972
+Xm(0) = 0.2928
+Xc(0) = 2.0256
+Xn(0) = 0.2009
+
+
+********** MODEL PARAMETERS
+g1 = 2.0947
+g2 = 1.3859
+g3 = 1.9160
+
+k1 = 3.9155
+k2 = 0.2511
+k3 = 8.4915
+k4 = 2.2424
+k5 = 1.8972
+k6 = 2.6877
+k7 = 1.9433
+k8 = 5.2738
+k9 = 18.1832
+
+m1 = 8.0496
+m2 = 2.1267
+m3 = 3.7925
+m4 = 7.1075
+m5 = 4.1272
+m6 = 1.4895
+m7 = 5.4578
+m8 = 2.1119
+m9 = 2.1795
+
+n1 = 9.4424
+n2 = 3.4691
+n3 = 2.6891
+
+p1 = 4.0188
+p2 = 2.1535
+p3 = 2.4201
+
+r1 = 10.6578
+r2 = 1.0993
+r3 = 0.6876
+r4 = 4.1674
+r5 = 2.0076
+r6 = 20.0848
+
+
+********** MODEL VARIABLES
+a = 2
+b = 2
+c = 2
+
+********** MODEL REACTIONS
+
+
+********** MODEL FUNCTIONS
+
+
+********** MODEL EVENTS
+
+
+********** MODEL MATLAB FUNCTIONS
+

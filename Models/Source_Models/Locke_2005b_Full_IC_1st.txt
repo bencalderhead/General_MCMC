@@ -1,0 +1,246 @@
+********** MODEL NAME
+SBLocke_2005b_Full_IC_1st
+
+********** MODEL NOTES
+
+
+********** MODEL STATES
+d/dt(LHYm) = (n1*Xn^a)/(g1^a + Xn^a) - (m1*LHYm)/(k1 + LHYm)   
+d/dt(LHYc) = p1*LHYm - r1*LHYc + r2*LHYn - (m2*LHYc)/(k2 + LHYc)
+d/dt(LHYn) = r1*LHYc - r2*LHYn - (m3*LHYn)/(k3 + LHYn)
+d/dt(TOC1m) = (n2*g2^b)/(g2^b + LHYn^b) - (m4*TOC1m)/(k4 + TOC1m)
+d/dt(TOC1c) = p2*TOC1m - r3*TOC1c + r4*TOC1n - (m5*TOC1c)/(k5 + TOC1c)
+d/dt(TOC1n) = r3*TOC1c - r4*TOC1n - (m6*TOC1n)/(k6 + TOC1n)
+d/dt(Xm) = (n3*TOC1n^c)/(g3^c + TOC1n^c) - (m7*Xm)/(k7 + Xm)
+d/dt(Xc) = p3*Xm - r5*Xc + r6*Xn - (m8*Xc)/(k8 + Xc)
+d/dt(Xn) = r5*Xc - r6*Xn - (m9*Xn)/(k9 + Xn)
+d/dt(LHYm_LHYm0) = ((LHYm*m1)/(LHYm + k1)^2 - m1/(LHYm + k1))*LHYm_LHYm0 + ((Xn^(a - 1)*a*n1)/(Xn^a + g1^a) - (Xn^a*Xn^(a - 1)*a*n1)/(Xn^a + g1^a)^2)*Xn_LHYm0
+d/dt(LHYc_LHYm0) = (p1)*LHYm_LHYm0 + ((LHYc*m2)/(LHYc + k2)^2 - m2/(LHYc + k2) - r1)*LHYc_LHYm0 + (r2)*LHYn_LHYm0
+d/dt(LHYn_LHYm0) = (r1)*LHYc_LHYm0 + ((LHYn*m3)/(LHYn + k3)^2 - m3/(LHYn + k3) - r2)*LHYn_LHYm0
+d/dt(TOC1m_LHYm0) = (-(LHYn^(b - 1)*b*g2^b*n2)/(LHYn^b + g2^b)^2)*LHYn_LHYm0 + ((TOC1m*m4)/(TOC1m + k4)^2 - m4/(TOC1m + k4))*TOC1m_LHYm0
+d/dt(TOC1c_LHYm0) = (p2)*TOC1m_LHYm0 + ((TOC1c*m5)/(TOC1c + k5)^2 - m5/(TOC1c + k5) - r3)*TOC1c_LHYm0 + (r4)*TOC1n_LHYm0
+d/dt(TOC1n_LHYm0) = (r3)*TOC1c_LHYm0 + ((TOC1n*m6)/(TOC1n + k6)^2 - m6/(TOC1n + k6) - r4)*TOC1n_LHYm0
+d/dt(Xm_LHYm0) = ((TOC1n^(c - 1)*c*n3)/(TOC1n^c + g3^c) - (TOC1n^c*TOC1n^(c - 1)*c*n3)/(TOC1n^c + g3^c)^2)*TOC1n_LHYm0 + ((Xm*m7)/(Xm + k7)^2 - m7/(Xm + k7))*Xm_LHYm0
+d/dt(Xc_LHYm0) = (p3)*Xm_LHYm0 + ((Xc*m8)/(Xc + k8)^2 - m8/(Xc + k8) - r5)*Xc_LHYm0 + (r6)*Xn_LHYm0
+d/dt(Xn_LHYm0) = (r5)*Xc_LHYm0 + ((Xn*m9)/(Xn + k9)^2 - m9/(Xn + k9) - r6)*Xn_LHYm0
+d/dt(LHYm_LHYc0) = ((LHYm*m1)/(LHYm + k1)^2 - m1/(LHYm + k1))*LHYm_LHYc0 + ((Xn^(a - 1)*a*n1)/(Xn^a + g1^a) - (Xn^a*Xn^(a - 1)*a*n1)/(Xn^a + g1^a)^2)*Xn_LHYc0
+d/dt(LHYc_LHYc0) = (p1)*LHYm_LHYc0 + ((LHYc*m2)/(LHYc + k2)^2 - m2/(LHYc + k2) - r1)*LHYc_LHYc0 + (r2)*LHYn_LHYc0
+d/dt(LHYn_LHYc0) = (r1)*LHYc_LHYc0 + ((LHYn*m3)/(LHYn + k3)^2 - m3/(LHYn + k3) - r2)*LHYn_LHYc0
+d/dt(TOC1m_LHYc0) = (-(LHYn^(b - 1)*b*g2^b*n2)/(LHYn^b + g2^b)^2)*LHYn_LHYc0 + ((TOC1m*m4)/(TOC1m + k4)^2 - m4/(TOC1m + k4))*TOC1m_LHYc0
+d/dt(TOC1c_LHYc0) = (p2)*TOC1m_LHYc0 + ((TOC1c*m5)/(TOC1c + k5)^2 - m5/(TOC1c + k5) - r3)*TOC1c_LHYc0 + (r4)*TOC1n_LHYc0
+d/dt(TOC1n_LHYc0) = (r3)*TOC1c_LHYc0 + ((TOC1n*m6)/(TOC1n + k6)^2 - m6/(TOC1n + k6) - r4)*TOC1n_LHYc0
+d/dt(Xm_LHYc0) = ((TOC1n^(c - 1)*c*n3)/(TOC1n^c + g3^c) - (TOC1n^c*TOC1n^(c - 1)*c*n3)/(TOC1n^c + g3^c)^2)*TOC1n_LHYc0 + ((Xm*m7)/(Xm + k7)^2 - m7/(Xm + k7))*Xm_LHYc0
+d/dt(Xc_LHYc0) = (p3)*Xm_LHYc0 + ((Xc*m8)/(Xc + k8)^2 - m8/(Xc + k8) - r5)*Xc_LHYc0 + (r6)*Xn_LHYc0
+d/dt(Xn_LHYc0) = (r5)*Xc_LHYc0 + ((Xn*m9)/(Xn + k9)^2 - m9/(Xn + k9) - r6)*Xn_LHYc0
+d/dt(LHYm_LHYn0) = ((LHYm*m1)/(LHYm + k1)^2 - m1/(LHYm + k1))*LHYm_LHYn0 + ((Xn^(a - 1)*a*n1)/(Xn^a + g1^a) - (Xn^a*Xn^(a - 1)*a*n1)/(Xn^a + g1^a)^2)*Xn_LHYn0
+d/dt(LHYc_LHYn0) = (p1)*LHYm_LHYn0 + ((LHYc*m2)/(LHYc + k2)^2 - m2/(LHYc + k2) - r1)*LHYc_LHYn0 + (r2)*LHYn_LHYn0
+d/dt(LHYn_LHYn0) = (r1)*LHYc_LHYn0 + ((LHYn*m3)/(LHYn + k3)^2 - m3/(LHYn + k3) - r2)*LHYn_LHYn0
+d/dt(TOC1m_LHYn0) = (-(LHYn^(b - 1)*b*g2^b*n2)/(LHYn^b + g2^b)^2)*LHYn_LHYn0 + ((TOC1m*m4)/(TOC1m + k4)^2 - m4/(TOC1m + k4))*TOC1m_LHYn0
+d/dt(TOC1c_LHYn0) = (p2)*TOC1m_LHYn0 + ((TOC1c*m5)/(TOC1c + k5)^2 - m5/(TOC1c + k5) - r3)*TOC1c_LHYn0 + (r4)*TOC1n_LHYn0
+d/dt(TOC1n_LHYn0) = (r3)*TOC1c_LHYn0 + ((TOC1n*m6)/(TOC1n + k6)^2 - m6/(TOC1n + k6) - r4)*TOC1n_LHYn0
+d/dt(Xm_LHYn0) = ((TOC1n^(c - 1)*c*n3)/(TOC1n^c + g3^c) - (TOC1n^c*TOC1n^(c - 1)*c*n3)/(TOC1n^c + g3^c)^2)*TOC1n_LHYn0 + ((Xm*m7)/(Xm + k7)^2 - m7/(Xm + k7))*Xm_LHYn0
+d/dt(Xc_LHYn0) = (p3)*Xm_LHYn0 + ((Xc*m8)/(Xc + k8)^2 - m8/(Xc + k8) - r5)*Xc_LHYn0 + (r6)*Xn_LHYn0
+d/dt(Xn_LHYn0) = (r5)*Xc_LHYn0 + ((Xn*m9)/(Xn + k9)^2 - m9/(Xn + k9) - r6)*Xn_LHYn0
+d/dt(LHYm_TOC1m0) = ((LHYm*m1)/(LHYm + k1)^2 - m1/(LHYm + k1))*LHYm_TOC1m0 + ((Xn^(a - 1)*a*n1)/(Xn^a + g1^a) - (Xn^a*Xn^(a - 1)*a*n1)/(Xn^a + g1^a)^2)*Xn_TOC1m0
+d/dt(LHYc_TOC1m0) = (p1)*LHYm_TOC1m0 + ((LHYc*m2)/(LHYc + k2)^2 - m2/(LHYc + k2) - r1)*LHYc_TOC1m0 + (r2)*LHYn_TOC1m0
+d/dt(LHYn_TOC1m0) = (r1)*LHYc_TOC1m0 + ((LHYn*m3)/(LHYn + k3)^2 - m3/(LHYn + k3) - r2)*LHYn_TOC1m0
+d/dt(TOC1m_TOC1m0) = (-(LHYn^(b - 1)*b*g2^b*n2)/(LHYn^b + g2^b)^2)*LHYn_TOC1m0 + ((TOC1m*m4)/(TOC1m + k4)^2 - m4/(TOC1m + k4))*TOC1m_TOC1m0
+d/dt(TOC1c_TOC1m0) = (p2)*TOC1m_TOC1m0 + ((TOC1c*m5)/(TOC1c + k5)^2 - m5/(TOC1c + k5) - r3)*TOC1c_TOC1m0 + (r4)*TOC1n_TOC1m0
+d/dt(TOC1n_TOC1m0) = (r3)*TOC1c_TOC1m0 + ((TOC1n*m6)/(TOC1n + k6)^2 - m6/(TOC1n + k6) - r4)*TOC1n_TOC1m0
+d/dt(Xm_TOC1m0) = ((TOC1n^(c - 1)*c*n3)/(TOC1n^c + g3^c) - (TOC1n^c*TOC1n^(c - 1)*c*n3)/(TOC1n^c + g3^c)^2)*TOC1n_TOC1m0 + ((Xm*m7)/(Xm + k7)^2 - m7/(Xm + k7))*Xm_TOC1m0
+d/dt(Xc_TOC1m0) = (p3)*Xm_TOC1m0 + ((Xc*m8)/(Xc + k8)^2 - m8/(Xc + k8) - r5)*Xc_TOC1m0 + (r6)*Xn_TOC1m0
+d/dt(Xn_TOC1m0) = (r5)*Xc_TOC1m0 + ((Xn*m9)/(Xn + k9)^2 - m9/(Xn + k9) - r6)*Xn_TOC1m0
+d/dt(LHYm_TOC1c0) = ((LHYm*m1)/(LHYm + k1)^2 - m1/(LHYm + k1))*LHYm_TOC1c0 + ((Xn^(a - 1)*a*n1)/(Xn^a + g1^a) - (Xn^a*Xn^(a - 1)*a*n1)/(Xn^a + g1^a)^2)*Xn_TOC1c0
+d/dt(LHYc_TOC1c0) = (p1)*LHYm_TOC1c0 + ((LHYc*m2)/(LHYc + k2)^2 - m2/(LHYc + k2) - r1)*LHYc_TOC1c0 + (r2)*LHYn_TOC1c0
+d/dt(LHYn_TOC1c0) = (r1)*LHYc_TOC1c0 + ((LHYn*m3)/(LHYn + k3)^2 - m3/(LHYn + k3) - r2)*LHYn_TOC1c0
+d/dt(TOC1m_TOC1c0) = (-(LHYn^(b - 1)*b*g2^b*n2)/(LHYn^b + g2^b)^2)*LHYn_TOC1c0 + ((TOC1m*m4)/(TOC1m + k4)^2 - m4/(TOC1m + k4))*TOC1m_TOC1c0
+d/dt(TOC1c_TOC1c0) = (p2)*TOC1m_TOC1c0 + ((TOC1c*m5)/(TOC1c + k5)^2 - m5/(TOC1c + k5) - r3)*TOC1c_TOC1c0 + (r4)*TOC1n_TOC1c0
+d/dt(TOC1n_TOC1c0) = (r3)*TOC1c_TOC1c0 + ((TOC1n*m6)/(TOC1n + k6)^2 - m6/(TOC1n + k6) - r4)*TOC1n_TOC1c0
+d/dt(Xm_TOC1c0) = ((TOC1n^(c - 1)*c*n3)/(TOC1n^c + g3^c) - (TOC1n^c*TOC1n^(c - 1)*c*n3)/(TOC1n^c + g3^c)^2)*TOC1n_TOC1c0 + ((Xm*m7)/(Xm + k7)^2 - m7/(Xm + k7))*Xm_TOC1c0
+d/dt(Xc_TOC1c0) = (p3)*Xm_TOC1c0 + ((Xc*m8)/(Xc + k8)^2 - m8/(Xc + k8) - r5)*Xc_TOC1c0 + (r6)*Xn_TOC1c0
+d/dt(Xn_TOC1c0) = (r5)*Xc_TOC1c0 + ((Xn*m9)/(Xn + k9)^2 - m9/(Xn + k9) - r6)*Xn_TOC1c0
+d/dt(LHYm_TOC1n0) = ((LHYm*m1)/(LHYm + k1)^2 - m1/(LHYm + k1))*LHYm_TOC1n0 + ((Xn^(a - 1)*a*n1)/(Xn^a + g1^a) - (Xn^a*Xn^(a - 1)*a*n1)/(Xn^a + g1^a)^2)*Xn_TOC1n0
+d/dt(LHYc_TOC1n0) = (p1)*LHYm_TOC1n0 + ((LHYc*m2)/(LHYc + k2)^2 - m2/(LHYc + k2) - r1)*LHYc_TOC1n0 + (r2)*LHYn_TOC1n0
+d/dt(LHYn_TOC1n0) = (r1)*LHYc_TOC1n0 + ((LHYn*m3)/(LHYn + k3)^2 - m3/(LHYn + k3) - r2)*LHYn_TOC1n0
+d/dt(TOC1m_TOC1n0) = (-(LHYn^(b - 1)*b*g2^b*n2)/(LHYn^b + g2^b)^2)*LHYn_TOC1n0 + ((TOC1m*m4)/(TOC1m + k4)^2 - m4/(TOC1m + k4))*TOC1m_TOC1n0
+d/dt(TOC1c_TOC1n0) = (p2)*TOC1m_TOC1n0 + ((TOC1c*m5)/(TOC1c + k5)^2 - m5/(TOC1c + k5) - r3)*TOC1c_TOC1n0 + (r4)*TOC1n_TOC1n0
+d/dt(TOC1n_TOC1n0) = (r3)*TOC1c_TOC1n0 + ((TOC1n*m6)/(TOC1n + k6)^2 - m6/(TOC1n + k6) - r4)*TOC1n_TOC1n0
+d/dt(Xm_TOC1n0) = ((TOC1n^(c - 1)*c*n3)/(TOC1n^c + g3^c) - (TOC1n^c*TOC1n^(c - 1)*c*n3)/(TOC1n^c + g3^c)^2)*TOC1n_TOC1n0 + ((Xm*m7)/(Xm + k7)^2 - m7/(Xm + k7))*Xm_TOC1n0
+d/dt(Xc_TOC1n0) = (p3)*Xm_TOC1n0 + ((Xc*m8)/(Xc + k8)^2 - m8/(Xc + k8) - r5)*Xc_TOC1n0 + (r6)*Xn_TOC1n0
+d/dt(Xn_TOC1n0) = (r5)*Xc_TOC1n0 + ((Xn*m9)/(Xn + k9)^2 - m9/(Xn + k9) - r6)*Xn_TOC1n0
+d/dt(LHYm_Xm0) = ((LHYm*m1)/(LHYm + k1)^2 - m1/(LHYm + k1))*LHYm_Xm0 + ((Xn^(a - 1)*a*n1)/(Xn^a + g1^a) - (Xn^a*Xn^(a - 1)*a*n1)/(Xn^a + g1^a)^2)*Xn_Xm0
+d/dt(LHYc_Xm0) = (p1)*LHYm_Xm0 + ((LHYc*m2)/(LHYc + k2)^2 - m2/(LHYc + k2) - r1)*LHYc_Xm0 + (r2)*LHYn_Xm0
+d/dt(LHYn_Xm0) = (r1)*LHYc_Xm0 + ((LHYn*m3)/(LHYn + k3)^2 - m3/(LHYn + k3) - r2)*LHYn_Xm0
+d/dt(TOC1m_Xm0) = (-(LHYn^(b - 1)*b*g2^b*n2)/(LHYn^b + g2^b)^2)*LHYn_Xm0 + ((TOC1m*m4)/(TOC1m + k4)^2 - m4/(TOC1m + k4))*TOC1m_Xm0
+d/dt(TOC1c_Xm0) = (p2)*TOC1m_Xm0 + ((TOC1c*m5)/(TOC1c + k5)^2 - m5/(TOC1c + k5) - r3)*TOC1c_Xm0 + (r4)*TOC1n_Xm0
+d/dt(TOC1n_Xm0) = (r3)*TOC1c_Xm0 + ((TOC1n*m6)/(TOC1n + k6)^2 - m6/(TOC1n + k6) - r4)*TOC1n_Xm0
+d/dt(Xm_Xm0) = ((TOC1n^(c - 1)*c*n3)/(TOC1n^c + g3^c) - (TOC1n^c*TOC1n^(c - 1)*c*n3)/(TOC1n^c + g3^c)^2)*TOC1n_Xm0 + ((Xm*m7)/(Xm + k7)^2 - m7/(Xm + k7))*Xm_Xm0
+d/dt(Xc_Xm0) = (p3)*Xm_Xm0 + ((Xc*m8)/(Xc + k8)^2 - m8/(Xc + k8) - r5)*Xc_Xm0 + (r6)*Xn_Xm0
+d/dt(Xn_Xm0) = (r5)*Xc_Xm0 + ((Xn*m9)/(Xn + k9)^2 - m9/(Xn + k9) - r6)*Xn_Xm0
+d/dt(LHYm_Xc0) = ((LHYm*m1)/(LHYm + k1)^2 - m1/(LHYm + k1))*LHYm_Xc0 + ((Xn^(a - 1)*a*n1)/(Xn^a + g1^a) - (Xn^a*Xn^(a - 1)*a*n1)/(Xn^a + g1^a)^2)*Xn_Xc0
+d/dt(LHYc_Xc0) = (p1)*LHYm_Xc0 + ((LHYc*m2)/(LHYc + k2)^2 - m2/(LHYc + k2) - r1)*LHYc_Xc0 + (r2)*LHYn_Xc0
+d/dt(LHYn_Xc0) = (r1)*LHYc_Xc0 + ((LHYn*m3)/(LHYn + k3)^2 - m3/(LHYn + k3) - r2)*LHYn_Xc0
+d/dt(TOC1m_Xc0) = (-(LHYn^(b - 1)*b*g2^b*n2)/(LHYn^b + g2^b)^2)*LHYn_Xc0 + ((TOC1m*m4)/(TOC1m + k4)^2 - m4/(TOC1m + k4))*TOC1m_Xc0
+d/dt(TOC1c_Xc0) = (p2)*TOC1m_Xc0 + ((TOC1c*m5)/(TOC1c + k5)^2 - m5/(TOC1c + k5) - r3)*TOC1c_Xc0 + (r4)*TOC1n_Xc0
+d/dt(TOC1n_Xc0) = (r3)*TOC1c_Xc0 + ((TOC1n*m6)/(TOC1n + k6)^2 - m6/(TOC1n + k6) - r4)*TOC1n_Xc0
+d/dt(Xm_Xc0) = ((TOC1n^(c - 1)*c*n3)/(TOC1n^c + g3^c) - (TOC1n^c*TOC1n^(c - 1)*c*n3)/(TOC1n^c + g3^c)^2)*TOC1n_Xc0 + ((Xm*m7)/(Xm + k7)^2 - m7/(Xm + k7))*Xm_Xc0
+d/dt(Xc_Xc0) = (p3)*Xm_Xc0 + ((Xc*m8)/(Xc + k8)^2 - m8/(Xc + k8) - r5)*Xc_Xc0 + (r6)*Xn_Xc0
+d/dt(Xn_Xc0) = (r5)*Xc_Xc0 + ((Xn*m9)/(Xn + k9)^2 - m9/(Xn + k9) - r6)*Xn_Xc0
+d/dt(LHYm_Xn0) = ((LHYm*m1)/(LHYm + k1)^2 - m1/(LHYm + k1))*LHYm_Xn0 + ((Xn^(a - 1)*a*n1)/(Xn^a + g1^a) - (Xn^a*Xn^(a - 1)*a*n1)/(Xn^a + g1^a)^2)*Xn_Xn0
+d/dt(LHYc_Xn0) = (p1)*LHYm_Xn0 + ((LHYc*m2)/(LHYc + k2)^2 - m2/(LHYc + k2) - r1)*LHYc_Xn0 + (r2)*LHYn_Xn0
+d/dt(LHYn_Xn0) = (r1)*LHYc_Xn0 + ((LHYn*m3)/(LHYn + k3)^2 - m3/(LHYn + k3) - r2)*LHYn_Xn0
+d/dt(TOC1m_Xn0) = (-(LHYn^(b - 1)*b*g2^b*n2)/(LHYn^b + g2^b)^2)*LHYn_Xn0 + ((TOC1m*m4)/(TOC1m + k4)^2 - m4/(TOC1m + k4))*TOC1m_Xn0
+d/dt(TOC1c_Xn0) = (p2)*TOC1m_Xn0 + ((TOC1c*m5)/(TOC1c + k5)^2 - m5/(TOC1c + k5) - r3)*TOC1c_Xn0 + (r4)*TOC1n_Xn0
+d/dt(TOC1n_Xn0) = (r3)*TOC1c_Xn0 + ((TOC1n*m6)/(TOC1n + k6)^2 - m6/(TOC1n + k6) - r4)*TOC1n_Xn0
+d/dt(Xm_Xn0) = ((TOC1n^(c - 1)*c*n3)/(TOC1n^c + g3^c) - (TOC1n^c*TOC1n^(c - 1)*c*n3)/(TOC1n^c + g3^c)^2)*TOC1n_Xn0 + ((Xm*m7)/(Xm + k7)^2 - m7/(Xm + k7))*Xm_Xn0
+d/dt(Xc_Xn0) = (p3)*Xm_Xn0 + ((Xc*m8)/(Xc + k8)^2 - m8/(Xc + k8) - r5)*Xc_Xn0 + (r6)*Xn_Xn0
+d/dt(Xn_Xn0) = (r5)*Xc_Xn0 + ((Xn*m9)/(Xn + k9)^2 - m9/(Xn + k9) - r6)*Xn_Xn0
+
+LHYm(0) = 0.0413
+LHYc(0) = 0.0156     
+LHYn(0) = 0.1139
+TOC1m(0) = 2.0894
+TOC1c(0) = 8.0616
+TOC1n(0) = 1.1972
+Xm(0) = 0.2928
+Xc(0) = 2.0256
+Xn(0) = 0.2009
+LHYm_LHYm0(0) = 1
+LHYc_LHYm0(0) = 0
+LHYn_LHYm0(0) = 0
+TOC1m_LHYm0(0) = 0
+TOC1c_LHYm0(0) = 0
+TOC1n_LHYm0(0) = 0
+Xm_LHYm0(0) = 0
+Xc_LHYm0(0) = 0
+Xn_LHYm0(0) = 0
+LHYm_LHYc0(0) = 0
+LHYc_LHYc0(0) = 1
+LHYn_LHYc0(0) = 0
+TOC1m_LHYc0(0) = 0
+TOC1c_LHYc0(0) = 0
+TOC1n_LHYc0(0) = 0
+Xm_LHYc0(0) = 0
+Xc_LHYc0(0) = 0
+Xn_LHYc0(0) = 0
+LHYm_LHYn0(0) = 0
+LHYc_LHYn0(0) = 0
+LHYn_LHYn0(0) = 1
+TOC1m_LHYn0(0) = 0
+TOC1c_LHYn0(0) = 0
+TOC1n_LHYn0(0) = 0
+Xm_LHYn0(0) = 0
+Xc_LHYn0(0) = 0
+Xn_LHYn0(0) = 0
+LHYm_TOC1m0(0) = 0
+LHYc_TOC1m0(0) = 0
+LHYn_TOC1m0(0) = 0
+TOC1m_TOC1m0(0) = 1
+TOC1c_TOC1m0(0) = 0
+TOC1n_TOC1m0(0) = 0
+Xm_TOC1m0(0) = 0
+Xc_TOC1m0(0) = 0
+Xn_TOC1m0(0) = 0
+LHYm_TOC1c0(0) = 0
+LHYc_TOC1c0(0) = 0
+LHYn_TOC1c0(0) = 0
+TOC1m_TOC1c0(0) = 0
+TOC1c_TOC1c0(0) = 1
+TOC1n_TOC1c0(0) = 0
+Xm_TOC1c0(0) = 0
+Xc_TOC1c0(0) = 0
+Xn_TOC1c0(0) = 0
+LHYm_TOC1n0(0) = 0
+LHYc_TOC1n0(0) = 0
+LHYn_TOC1n0(0) = 0
+TOC1m_TOC1n0(0) = 0
+TOC1c_TOC1n0(0) = 0
+TOC1n_TOC1n0(0) = 1
+Xm_TOC1n0(0) = 0
+Xc_TOC1n0(0) = 0
+Xn_TOC1n0(0) = 0
+LHYm_Xm0(0) = 0
+LHYc_Xm0(0) = 0
+LHYn_Xm0(0) = 0
+TOC1m_Xm0(0) = 0
+TOC1c_Xm0(0) = 0
+TOC1n_Xm0(0) = 0
+Xm_Xm0(0) = 1
+Xc_Xm0(0) = 0
+Xn_Xm0(0) = 0
+LHYm_Xc0(0) = 0
+LHYc_Xc0(0) = 0
+LHYn_Xc0(0) = 0
+TOC1m_Xc0(0) = 0
+TOC1c_Xc0(0) = 0
+TOC1n_Xc0(0) = 0
+Xm_Xc0(0) = 0
+Xc_Xc0(0) = 1
+Xn_Xc0(0) = 0
+LHYm_Xn0(0) = 0
+LHYc_Xn0(0) = 0
+LHYn_Xn0(0) = 0
+TOC1m_Xn0(0) = 0
+TOC1c_Xn0(0) = 0
+TOC1n_Xn0(0) = 0
+Xm_Xn0(0) = 0
+Xc_Xn0(0) = 0
+Xn_Xn0(0) = 1
+
+********** MODEL PARAMETERS
+g1 = 2.0947
+g2 = 1.3859
+g3 = 1.9160
+
+k1 = 3.9155
+k2 = 0.2511
+k3 = 8.4915
+k4 = 2.2424
+k5 = 1.8972
+k6 = 2.6877
+k7 = 1.9433
+k8 = 5.2738
+k9 = 18.1832
+
+m1 = 8.0496
+m2 = 2.1267
+m3 = 3.7925
+m4 = 7.1075
+m5 = 4.1272
+m6 = 1.4895
+m7 = 5.4578
+m8 = 2.1119
+m9 = 2.1795
+
+n1 = 9.4424
+n2 = 3.4691
+n3 = 2.6891
+
+p1 = 4.0188
+p2 = 2.1535
+p3 = 2.4201
+
+r1 = 10.6578
+r2 = 1.0993
+r3 = 0.6876
+r4 = 4.1674
+r5 = 2.0076
+r6 = 20.0848
+
+
+********** MODEL VARIABLES
+a = 2
+b = 2
+c = 2
+
+********** MODEL REACTIONS
+
+
+********** MODEL FUNCTIONS
+
+
+********** MODEL EVENTS
+
+
+********** MODEL MATLAB FUNCTIONS
+
