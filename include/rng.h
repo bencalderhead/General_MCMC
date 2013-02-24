@@ -29,7 +29,7 @@ static inline void rng_set(rng r, unsigned long seed) {
 static inline int rng_get(const rng r) { return r->get(r->state); }
 static inline double rng_get_double(const rng r) { return r->get_double(r->state); }
 
-const rng_type mt19937;
+extern const rng_type mt19937;
 
 #ifdef __cplusplus
 }
