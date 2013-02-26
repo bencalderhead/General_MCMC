@@ -1,6 +1,10 @@
 #ifndef GAMMA_H
 #define GAMMA_H
 
+#include <math.h>
+#include "rng.h"
+#include "normal.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -9,84 +13,107 @@ extern "C" {
  * Gamma distribution.
  *
  * Parameters:
- *   shape > 0
- *   scale > 0
+ *   alpha > 0
+ *   beta > 0
  *
- * Ref: http://en.wikipedia.org/wiki/Gamma_distribution
+ * http://en.wikipedia.org/wiki/Gamma_distribution
  */
-typedef struct __gamma_distribution_st * gamma_distribution;
+typedef struct {
+  double alpha, beta;
+} gamma;
 
-/**
- * Creates a new gamma distribution.
- *
- * @param g      the newly created gamma distribution is returned through
- *                 this pointer
- * @param shape  the shape
- * @param scale  the scale
- *
- * @return 0 on success, EINVAL if shape <= 0 or scale <= 0, ENOMEM if there is
- *  not enough memory available to create another gamma distribution.
- */
-int gamma_create(gamma_distribution *, double, double);
+static double gammln(double xx) {
+  // Numerical Recipes in C++, 2nd edition (section 6.1, page 219)
+  static const double cof[6] = { 76.18009172947146,      -86.50532032941677,
+                                 24.01409824083091,       -1.231739572450155,
+                                  0.1208650973866179e-2,  -0.5395239384953e-5 };
 
-/**
- * Destroys a gamma distribution, freeing any memory allocated.
- *
- * @param g  the gamma distribution to destroy
- */
-void gamma_destroy(gamma_distribution);
-
-double gamma_get_shape(const gamma_distribution);
-double gamma_get_scale(const gamma_distribution);
-
-int gamma_set_shape(gamma_distribution, double);
-int gamma_set_scale(gamma_distribution, double);
+  double y = xx, x = xx;
+  double tmp = x + 5.5;
+  tmp -= (x + 0.5) * log(tmp);
+  double ser = 1.000000000190015;
+  for (int j = 0; j < 6; j++)
+    ser += cof[j] / ++y;
+  return -tmp + log(M_SQRT2PI * ser / x);
+}
 
 /**
  * Generates a gamma distributed double precision floating point variable.
- * If the distribution is NULL it is taken to be G(1, 1).
  *
- * @param g      the gamma distribution (may be NULL)
- * @param rng    a function generating double precision floating point variables
- *                 uniformly distributed over [0, 1).
- * @param state  state for the rng function
+ * @param r  a random number generator
+ * @param g  distribution parameters
  *
  * @return a gamma distributed double precision floating point variable.
  */
-double gamma_rand(const gamma_distribution, double (*)(const void *), const void *);
+static inline double gamma_rand(const rng * r, const gamma * g) {
+  // Numerical Recipes in C++, 3rd edition (section 7.3, page 370)
+  const normal n = { 0.0, 1.0 };
+  const double alpha = (g->alpha < 1.0) ? g->alpha + 1.0 : g->alpha;
+  const double a1 = alpha - 1.0 / 3.0;
+  const double a2 = 1.0 / sqrt(9.0 * a1);
+
+  double u, v, x;
+  do {
+    do {
+      x = normal_rand(r, &n);
+      v = 1.0 + a2 * x;
+    } while (v <= 0.0);
+
+    v = v * v * v;
+    u = rng_get_double(r);
+  } while (u > 1.0 - 0.331 * x * x * x * x &&
+           log(u) > 0.5 * x * x + a1 * (1.0 - v + log(v)));
+
+  if (alpha == g->alpha)
+    return a1 * v / g->beta;
+  else {
+    do { u = rng_get_double(r); } while (u == 0.0);
+    return pow(u, 1.0 / g->alpha) * a1 * v / g->beta;
+  }
+}
 
 /**
  * Calculates the value of the probability density function for the specified
- * gamma distribution at point x.  If the distribution is NULL it is taken
- * to be G(1, 1).
+ * gamma distribution at point x.
  *
- * @param g  the gamma distribution (may be NULL)
  * @param x  the point to evaluate the PDF at
+ * @param g  distribution parameters
+ *
  * @return the value of the PDF at point x.
  */
-double gamma_pdf(double, const gamma_distribution);
+static inline double gamma_pdf(double x, const gamma * g) {
+  // Numerical Recipes in C++, 3rd edition (section 6.14, page 331)
+  if (x <= 0.0)
+    return 0.0;
+  const double fac = g->alpha * log(g->beta) - gammln(g->alpha);
+  return exp(-g->beta * x + (g->alpha - 1.0) * log(x) + fac);
+}
 
 /**
  * Calculates the value of the first derivative of the probability density
- * function for the specified gamma distribution at point x.  If the
- * distribution is NULL it is taken to be G(1, 1).
+ * function for the specified gamma distribution at point x.
  *
- * @param l  the gamma distribution (may be NULL)
  * @param x  the point to evaluate the PDF at
+ * @param g  distribution parameters
+ *
  * @return the value of the first derivative of the PDF at point x.
  */
-double gamma_1st_order_pdf(double, const gamma_distribution);
+double gamma_1st_order_pdf(double x, const gamma * g) {
+  return (x <= 0.0) ? -HUGE_VAL : (g->alpha - 1.0) / x - 1.0 / g->beta;
+}
 
 /**
  * Calculates the value of the second derivative of the probability density
- * function for the specified gamma distribution at point x.  If the
- * distribution is NULL it is taken to be G(1, 1).
+ * function for the specified gamma distribution at point x.
  *
- * @param l  the gamma distribution (may be NULL)
  * @param x  the point to evaluate the PDF at
+ * @param g  distribution parameters
+ *
  * @return the value of the second derivative of the PDF at point x.
  */
-double gamma_2nd_order_pdf(double, const gamma_distribution);
+double gamma_2nd_order_pdf(double x, const gamma * g) {
+  return (x <= 0.0) ? -HUGE_VAL : -(g->alpha - 1.0) / (x * x);
+}
 
 #ifdef __cplusplus
 }

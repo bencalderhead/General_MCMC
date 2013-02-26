@@ -1,6 +1,14 @@
 #ifndef NORMAL_H
 #define NORMAL_H
 
+#include <math.h>
+#include "rng.h"
+
+// M_PI is not defined in C99
+// M_PI always appears as sqrt(2.0 * M_PI) so define that here instead
+// This is also used by the lognormal and gamma distributions
+#define M_SQRT2PI 2.50662827463100050241
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -14,90 +22,87 @@ extern "C" {
  *
  * http://en.wikipedia.org/wiki/Normal_distribution
  */
-typedef struct __normal_distribution_st * normal_distribution;
-
-/**
- * Creates a new normal distribution.
- *
- * @param n     the newly created normal distribution is returned through this
- *                pointer
- * @param mean  the mean
- * @param sd    the standard deviation
- *
- * @return 0 on success, EINVAL if sd <= 0, ENOMEM if there is not enough
- *  memory available to create another normal distribution.
- */
-int normal_create(normal_distribution *, double, double);
-
-/**
- * Destroys a normal distribution, freeing any memory allocated.
- *
- * @param n  the normal distribution to destroy
- */
-void normal_destroy(normal_distribution);
-
-double normal_get_mean(const normal_distribution);
-double normal_get_variance(const normal_distribution);
-
-int normal_set_mean(normal_distribution, double);
-int normal_set_standard_deviation(normal_distribution, double);
+typedef struct {
+  double mean, stddev;
+} normal;
 
 /**
  * Generates a normally distributed double precision floating point variable.
- * If the distribution is NULL then it is assumed to be N(0, 1).
  *
- * @param n      the normal distribution (may be NULL)
- * @param rand   a function generating double precision floating point variables
- *                 uniformly distributed over [0, 1).
- * @param state  state for the rng function
+ * @param r  a random number generator
+ * @param n  distribution parameters
  *
  * @return a normally distributed double precision floating point variable.
  */
-double normal_rand(const normal_distribution, double (*)(const void *), const void *);
+static inline double normal_rand(const rng * r, const normal * n) {
+  // Numerical Recipes in C++, 3rd edition (section 7.3, page 369)
+
+  double u, v, q;
+  do {
+    u = rng_get_double(r);
+    v = 1.7156 * (rng_get_double(r) - 0.5);
+    double x = u - 0.449871;
+    double y = fabs(v) + 0.386595;
+    q = x * x + y * (0.19600 * y - 0.25472 * x);
+  } while (q > 0.27597 && (q > 0.27846 || v * v > -4.0 * log(u) * u * u));
+
+  return n->mean + n->stddev * v / u;
+}
 
 /**
  * Calculates the log of the value of the probability density function for the
- * specified normal distribution at point x.  If the distribution is NULL then
- * it is assumed to be N(0, 1).
+ * specified normal distribution at point x.
  *
- * @param n  the normal distribution (may be NULL)
  * @param x  the point to evaluate the PDF at
+ * @param n  distribution parameters
+ *
  * @return the log of the value of the PDF at point x.
  */
-double normal_log_pdf(const normal_distribution, double);
+static inline double normal_log_pdf(double x, const normal * n) {
+  return -log(n->stddev) - log(M_SQRT2PI) -
+  ((x - n->mean) * (x - n->mean)) / (2.0 * n->stddev * n->stddev);
+}
 
 /**
  * Calculates the value of the probability density function for the specified
- * normal distribution at point x.  If the distribution is NULL then it is
- * assumed to be N(0, 1).
+ * normal distribution at point x.
  *
- * @param n  the normal distribution (may be NULL)
  * @param x  the point to evaluate the PDF at
+ * @param n  distribution parameters
+ *
  * @return the value of the PDF at point x.
  */
-double normal_pdf(const normal_distribution, double);
+static inline double normal_pdf(double x, const normal * n) {
+  return 1.0 / (n->stddev * M_SQRT2PI) *
+  exp(-((x - n->mean) * (x - n->mean)) / (2.0 * n->stddev * n->stddev));
+}
 
 /**
  * Calculates the value of the first derivative of the probability density
- * function for the specified normal distribution at point x.  If the
- * distribution is NULL then it is assumed to be N(0, 1).
+ * function for the specified normal distribution at point x.
  *
- * @param n  the normal distribution (may be NULL)
  * @param x  the point to evaluate the PDF at
+ * @param n  distribution parameters
+ *
  * @return the value of the first derivative of the PDF at point x.
  */
-double normal_1st_order_pdf(const normal_distribution, double);
+static inline double normal_1st_order_pdf(double x, const normal * n) {
+  return -(x - n->mean) / (n->stddev * n->stddev);
+}
 
 /**
  * Calculates the value of the second derivative of the probability density
- * function for the specified normal distribution at point x.  If the
- * distribution is NULL then it is assumed to be N(0, 1).
+ * function for the specified normal distribution at point x.
  *
- * @param n  the normal distribution (may be NULL)
  * @param x  the point to evaluate the PDF at
+ * @param n  distribution parameters
+ *
  * @return the value of the second derivative of the PDF at point x.
  */
-double normal_2nd_order_pdf(const normal_distribution, double);
+static inline double normal_2nd_order_pdf(double x, const normal * n) {
+  (void)x;
+  return -1.0 / (n->stddev * n->stddev);
+}
 
 #ifdef __cplusplus
 }

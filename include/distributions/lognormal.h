@@ -1,6 +1,10 @@
 #ifndef LOGNORMAL_H
 #define LOGNORMAL_H
 
+#include <math.h>
+#include "rng.h"
+#include "normal.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -14,79 +18,62 @@ extern "C" {
  *
  * http://en.wikipedia.org/wiki/Lognormal_distribution
  */
-typedef struct __lognormal_distribution_st * lognormal_distribution;
-
-/**
- * Creates a new lognormal distribution.
- *
- * @param l      the newly created lognormal distribution is returned through
- *                 this pointer
- * @param shape  the shape
- * @param scale  the log-scale
- *
- * @return 0 on success, EINVAL if shape <= 0, ENOMEM if there is not enough
- *  memory available to create another lognormal distribution.
- */
-int lognormal_create(lognormal_distribution *, double, double);
-
-/**
- * Destroys a lognormal distribution, freeing any memory allocated.
- *
- * @param l  the lognormal distribution to destroy
- */
-void lognormal_destroy(lognormal_distribution);
-
-double lognormal_get_shape(const lognormal_distribution);
-double lognormal_get_scale(const lognormal_distribution);
-
-int lognormal_set_shape(lognormal_distribution, double);
-int lognormal_set_scale(lognormal_distribution, double);
+typedef struct {
+  double mean, stddev;
+} lognormal;
 
 /**
  * Generates a lognormal distributed double precision floating point variable.
- * If the distribution is NULL it is taken to be lnN(1, 1).
  *
- * @param l      the lognormal distribution (may be NULL)
- * @param rng    a function generating double precision floating point variables
- *                 uniformly distributed over [0, 1).
- * @param state  state for the rng function
+ * @param r  a random number generator
+ * @param l  distribution parameters
  *
  * @return a lognormal distributed double precision floating point variable.
  */
-double lognormal_rand(const lognormal_distribution, double (*)(const void *), const void *);
+static inline double lognormal_rand(const rng * r, const lognormal * l) {
+  const normal n = { 0.0, 1.0 };
+  return exp(l->mean + l->stddev * normal_rand(r, &n));
+}
 
 /**
  * Calculates the value of the probability density function for the specified
- * lognormal distribution at point x.  If the distribution is NULL it is taken
- * to be lnN(1, 1).
+ * lognormal distribution at point x.
  *
- * @param l  the lognormal distribution (may be NULL)
  * @param x  the point to evaluate the PDF at
+ * @param l  distribution parameters
+ *
  * @return the value of the PDF at point x.
  */
-double lognormal_pdf(const lognormal_distribution, double);
+static inline double lognormal_pdf(double x, const lognormal * l) {
+  return (1.0 / (x * l->stddev * M_SQRT2PI)) *
+  exp(-((log(x) - l->mean) * (log(x) - l->mean)) / (2.0 * l->stddev * l->stddev));
+}
 
 /**
  * Calculates the value of the first derivative of the probability density
- * function for the specified lognormal distribution at point x.  If the
- * distribution is NULL it is taken to be lnN(1, 1).
+ * function for the specified lognormal distribution at point x.
  *
- * @param l  the lognormal distribution (may be NULL)
  * @param x  the point to evaluate the PDF at
+ * @param l  distribution parameters
+ *
  * @return the value of the first derivative of the PDF at point x.
  */
-double lognormal_1st_order_pdf(const lognormal_distribution, double);
+static inline double lognormal_1st_order_pdf(double x, const lognormal * l) {
+  return -(1.0 / x) - ((log(x) - l->mean) / (l->stddev * l->stddev)) * (1.0 / x);
+}
 
 /**
  * Calculates the value of the second derivative of the probability density
- * function for the specified lognormal distribution at point x.  If the
- * distribution is NULL it is taken to be lnN(1, 1).
+ * function for the specified lognormal distribution at point x.
  *
- * @param l  the lognormal distribution (may be NULL)
  * @param x  the point to evaluate the PDF at
+ * @param l  distribution parameters
+ *
  * @return the value of the second derivative of the PDF at point x.
  */
-double lognormal_2nd_order_pdf(const lognormal_distribution, double);
+static inline double lognormal_2nd_order_pdf(double x, const lognormal * l) {
+  return (1.0 / (x * x)) + ((log(x) - l->mean) / (l->stddev * l->stddev)) * (1.0 / (x * x)) - (1.0 / (l->stddev * l->stddev)) * (1.0 / (x * x));
+}
 
 #ifdef __cplusplus
 }

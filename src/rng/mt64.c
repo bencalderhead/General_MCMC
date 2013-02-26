@@ -1,6 +1,4 @@
-#include "rng/mt64.h"
-#include <stdlib.h>
-#include <errno.h>
+#include "rng.h"
 
 #define NN 312
 #define MM 156
@@ -9,48 +7,24 @@
 #define LM UINT64_C(0x7FFFFFFF) /* Least significant 31 bits */
 
 /**
- * Mersenne Twister 64-bit version.
+ * Mersenne Twister 64-bit.
  *
  * http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt64.html
  */
-struct __mt64_st {
+typedef struct {
   uint64_t state[NN];   /* The array for the state vector */
   int i;
-};
-
-/**
- * Creates a new Mersenne Twister PRNG and initialises it with a seed.
- *
- * @param mt    the created PRNG is returned through this pointer
- * @param seed  the seed to use to initialise the PRNG state
- * @return 0 on success, or ENOMEM if there is not enough memory available to
- * create another Mersenne Twister PRNG.
- */
-int mt64_create(mt64 * mt, uint64_t seed) {
-  if ((*mt = malloc(sizeof(struct __mt64_st))) == NULL)
-    return ENOMEM;
-
-  mt64_set(*mt, seed);
-
-  return 0;
-}
-
-/**
- * Destroys a Mersenne Twister PRNG, freeing any memory used.
- *
- * @param mt  the PRNG to destroy
- */
-void mt64_destroy(mt64 mt) {
-  free(mt);
-}
+} mt64;
 
 /**
  * Re-seeds the Mersenne Twister.
  *
- * @param mt    the PRNG to re-seed
+ * @param rng    the RNG to re-seed
  * @param seed  the new seed
  */
-void mt64_set(const mt64 mt, uint64_t seed) {
+static void set(void * rng, uint64_t seed) {
+  mt64 * mt = (mt64 *)rng;
+
   mt->state[0] = seed;
   for (int i = 1; i < NN; i++)
     mt->state[i] =  (UINT64_C(6364136223846793005) *
@@ -62,10 +36,12 @@ void mt64_set(const mt64 mt, uint64_t seed) {
 /**
  * Generates a 64-bit unsigned integer uniformly distributed over [0, 2^64-1].
  *
- * @param mt  the PRNG
+ * @param rng  the RNG
  * @return the random integer.
  */
-uint64_t mt64_get(const mt64 mt) {
+static uint64_t get(void * rng) {
+  mt64 * mt = (mt64 *)rng;
+
   static const uint64_t mag01[2] = { UINT64_C(0), MATRIX_A };
 
   if (mt->i >= NN) { /* generate NN words at one time */
@@ -97,11 +73,18 @@ uint64_t mt64_get(const mt64 mt) {
 
 /**
  * Generates a double precision floating point value uniformly distributed over
- * [0, 1).
+ * (0, 1).
  *
  * @param mt  the PRNG
  * @return the random double precision floating point value.
  */
-double mt64_get_double(const mt64 mt) {
-  return (double)mt64_get(mt) / ((double)UINT64_MAX + 1.0);
+static double get_double(void * rng) {
+  mt64 * mt = (mt64 *)rng;
+  return ((double)get(mt) + 1.0) / ((double)UINT64_MAX + 2.0);
 }
+
+static const rng_type mt64_type = {
+  "Mersenne Twister 64-bit", 0, UINT64_MAX, sizeof(mt64), set, get, get_double
+};
+
+const rng_type * mt19937_64 = &mt64_type;
