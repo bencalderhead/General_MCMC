@@ -30,7 +30,7 @@ typedef struct {
  *
  * @return a lognormal distributed double precision floating point variable.
  */
-static inline double lognormal_rand(const rng * r, const lognormal * l) {
+static inline double lognormal_rand(const rng * restrict r, const lognormal * restrict l) {
   const normal n = { 0.0, 1.0 };
   return exp(l->mean + l->stddev * normal_rand(r, &n));
 }

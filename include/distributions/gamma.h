@@ -45,7 +45,7 @@ static double gammln(double xx) {
  *
  * @return a gamma distributed double precision floating point variable.
  */
-static inline double gamma_rand(const rng * r, const gamma * g) {
+static inline double gamma_rand(const rng * restrict r, const gamma * restrict g) {
   // Numerical Recipes in C++, 3rd edition (section 7.3, page 370)
   const normal n = { 0.0, 1.0 };
   const double alpha = (g->alpha < 1.0) ? g->alpha + 1.0 : g->alpha;

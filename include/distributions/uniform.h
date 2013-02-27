@@ -28,7 +28,7 @@ typedef struct {
  *
  * @return a uniformly distributed double precision floating point variable.
  */
-static inline double uniform_rand(const rng * r, const uniform * u) {
+static inline double uniform_rand(const rng * restrict r, const uniform * restrict u) {
   return u->lower + rng_get_double(r) * (u->upper - u->lower);
 }
 

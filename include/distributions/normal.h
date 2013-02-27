@@ -34,7 +34,7 @@ typedef struct {
  *
  * @return a normally distributed double precision floating point variable.
  */
-static inline double normal_rand(const rng * r, const normal * n) {
+static inline double normal_rand(const rng * restrict r, const normal * restrict n) {
   // Numerical Recipes in C++, 3rd edition (section 7.3, page 369)
 
   double u, v, q;
