@@ -11,7 +11,7 @@ struct __ion_model_st {
   int n;                // Number of parameters
   prior * priors;       // Priors (n of them)
   double * Q, size_t ldq;           // Q matrix (n by n)
-  void (*calculate_Q_matrix)(const double *, double *);  // Function to generate the Q matrix
+  void (*calculate_Q_matrix)(const double *, double *, size_t);  // Function to generate the Q matrix
   int closed, open;           // Offsets of closed and open states to split the Q matrix
 };
 
@@ -66,13 +66,16 @@ int ion_evaluate_mh(const ion_model model, markov_chain chain, int * info) {
     eq_states[j] = 1.0;
   }
 
-  dgemm(CblasNoTrans, CblasTrans, model->nstates, model->nstates, model->nstates, 1.0, Q, ldq, Q, ldq, 1.0, S, model->nstates);
-  dgesv(CblasUpper, CblasNoTrans, CblasNonUnit, model->nstates, S, model->nstates, eq_states, 1);      // Numerical instability
+  cblas_dgemm(CblasNoTrans, CblasTrans, model->nstates, model->nstates, model->nstates, 1.0, Q, ldq, Q, ldq, 1.0, S, model->nstates);
+  cblas_dgesv(CblasUpper, CblasNoTrans, CblasNonUnit, model->nstates, S, model->nstates, eq_states, 1);      // Numerical instability
 
   free(S);
 
   double * eq_states_f = &eq_states[model->closed];
   double * eq_states_a = &eq_states[model->open];
+
+  // Calculate spectral matrices and eigenvectors of current Q_FF
+  cblas_dgeev();
 
 % Calculate spectral matrices and eigenvectors of current Q_FF
 [X V] = eig(Q_FF);
