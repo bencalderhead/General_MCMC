@@ -1,4 +1,17 @@
 #include "ion.h"
+#include <fenv.h>
+
+#define MALLOC(m, n, A, lda) \
+  do { \
+    if ((A = malloc(n * (lda = (m + 1) & ~1) * sizeof(double))) == NULL) \
+      return ION_CHANNEL_OUT_OF_MEMORY; \
+  } while (0)
+
+#define VALLOC(n, x, incx) \
+  do { \
+    if ((x = malloc(n * incx * sizeof(double))) == NULL) \
+      return ION_CHANNEL_OUT_OF_MEMORY; \
+  } while (0)
 
 #define ION_CHANNEL_PROPOSAL_OUTWITH_PRIOR 1
 
@@ -9,41 +22,67 @@ typedef struct {
 
 struct __ion_model_st {
   int n;                // Number of parameters
-  prior * priors;       // Priors (n of them)
-  double * Q, size_t ldq;           // Q matrix (n by n)
-  void (*calculate_Q_matrix)(const double *, double *, size_t);  // Function to generate the Q matrix
-  int closed, open;           // Offsets of closed and open states to split the Q matrix
+  prior * priors;       // Prior for each parameter (n of them)
+  
+  int nStates;     // Number of states
+  void (*calculate_Q_matrix)(const double *, double *, size_t);  // Function to generate the Q matrix from the current parameter values
+  int nOpenStates, nClosedStates;
+  int * openStates, * closedStates;
 };
 
 struct __markov_chain_st {
-  unsigned int n;       // Number of parameters
+  int n;                // Number of parameters
   double * params;      // Parameters
   double * logprior;    // (log) Prior probability of parameters
 }
 
 int ion_evaluate_mh(const ion_model model, markov_chain chain, int * info) {
-  // Calculate the prior for each parameters
+  // Calculate the prior for each parameter
   for (int i = 0; i < model->n; i++) {
     double x = model->priors[i].pdf(chain->params[i], model->prior[i].params);
-    if (x > 0.0)
-      chain->logprior[i] = log(x);
-    else {
+    if (x <= 0.0) {
       *info = i + 1;
       return ION_CHANNEL_PROPOSAL_OUTWITH_PRIOR;
     }
+    chain->logprior[i] = log(x);
   }
 
 
   // Calculate the likelihood of the ion channel data
 
   // Calculate the Q matrices
-  model->calculate_Q_matrix(chain->params, model->Q, model->ldq);
+  double * Q;
+  size_t ldq;
+  MALLOC(model->nStates, model->nStates, Q, ldq);
+  model->calculate_Q_matrix(chain->params, Q, ldq);
 
-  // Split up the Q matrix into its component matrices
-  double * Q_FF = &model->Q[model->closed * model->ldq + model->closed];
-  double * Q_FA = &model->Q[model->closed * model->ldq + model->open];
-  double * Q_AF = &model->Q[model->open * model->ldq + model->closed];
-  double * Q_AA = &model->Q[model->open * model->ldq + model->open];
+  // Split up the Q matrix into its component matrices  
+  double * Q_FF, * Q_FA, * Q_AF, * Q_AA;
+  size_t ldqff, ldqfa, ldqaf. ldqaa;
+  MALLOC(model->nClosedStates, model->nClosedStates, Q_FF, ldqff);
+  MALLOC(model->nClosedStates, model->nOpenStates,   Q_FA, ldqfa);
+  MALLOC(model->nOpenStates,   model->nClosedStates, Q_AF, ldqaf);
+  MALLOC(model->nOpenStates,   model->nOpenStates,   Q_AA, ldqaa);
+
+  for (int j = 0; j < model->nClosedStates; j++) {
+    for (int i = 0; i < model->nClosedStates; i++)
+      Q_FF[j * ldqff + i] = Q[model->closedStates[j] * ldq + model->closedStates[i]];
+  }
+  
+  for (int j = 0; j < model->nOpenStates; j++) {
+    for (int i = 0; i < model->nClosedStates; i++)
+      Q_FA[j * ldqfa + i] = Q[model->openStates[j] * ldq + model->closedStates[i]];
+  }
+  
+  for (int j = 0; j < model->nClosedStates; j++) {
+    for (int i = 0; i < model->nOpenStates; i++)
+      Q_AF[j * ldqaf + i] = Q[model->closedStates[j] * ldq + model->openStates[i]];
+  }
+  
+  for (int j = 0; j < model->nOpenStates; j++) {
+    for (int i = 0; i < model->nOpenStates; i++)
+      Q_AA[j * ldqaa + i] = Q[model->openStates[j] * ldq + model->openStates[i]];
+  }
 
   // Calculate equilibrium state occupancies
   // Original code does:
@@ -51,39 +90,87 @@ int ion_evaluate_mh(const ion_model model, markov_chain chain, int * info) {
   //  S = [ Q u' ];
   //  EqStates = u / (S * S');
   // This is equivalent to:
-  //  eqstates = 1 / (Q * Q' + 1);
-  // Not sure if it is possible to do everything in place to avoid (slow) malloc
-  // to store Q * Q'
-  double * S, * eq_states;
-  if ((S = malloc(model->nstates * model->nstates * sizeof(double))) == NULL)
-    return ION_CHANNEL_OUT_OF_MEMORY;
-  if ((eq_states = malloc(model->nstates * sizeof(double))) == NULL)
-    return ION_CHANNEL_OUT_OF_MEMORY;
+  //  u = ones(1, numstates);
+  //  eqstates = u / (Q * Q' + ones(numstates));
 
-  for (int j = 0; j < model->nstates; j++) {
-    for (int i = 0; i < model->nstates; i++)
-      S[j * model->nstates + i] = 1.0;
-    eq_states[j] = 1.0;
+  double * S, * eqStates;
+  size_t lds;
+  MALLOC(model->nStates, model->nStates, S, lds);
+  VALLOC(model->nStates, eqStates, 1);
+  
+  // Initialise S to all ones (S = ones(numstates))
+  // Initialise eqStates to all ones (eqStates = ones(1, numstates))
+  for (int j = 0; j < model->nStates; j++) {
+    for (int i = 0; i < model->nStates; i++)
+      S[j * lds + i] = 1.0;
+    eqStates[j] = 1.0;
   }
 
-  cblas_dgemm(CblasNoTrans, CblasTrans, model->nstates, model->nstates, model->nstates, 1.0, Q, ldq, Q, ldq, 1.0, S, model->nstates);
-  cblas_dgesv(CblasUpper, CblasNoTrans, CblasNonUnit, model->nstates, S, model->nstates, eq_states, 1);      // Numerical instability
-
+  // S += Q * Q' (S = Q * Q' + ones(numstates))
+  cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans, model->nStates, model->nStates, model->nStates, 1.0, Q, ldq, Q, ldq, 1.0, S, lds);
+  // eqStates /= S (eqStates = ones(1, numstates) / (Q * Q' + ones(numstates)))
+  feclearexcept(FE_DIVBYZERO);
+  cblas_dgesv(CblasColMajor, CblasUpper, CblasNoTrans, CblasNonUnit, model->nStates, S, lds, eqStates, 1);      // Numerical instability may occur in here
+  if (fegetexcept(FE_DIVBYZERO) != 0)
+    return ION_CHANNEL_NUMERICAL_INSTABILITY;
+  
+  // Don't need Q or S any more
+  free(Q);
   free(S);
 
-  double * eq_states_f = &eq_states[model->closed];
-  double * eq_states_a = &eq_states[model->open];
+  double * eqStates_F, * eqStates_A;
+  VALLOC(model->nClosedStates, eqStates_F, 1);
+  VALLOC(model->nOpenStates, eqStates_A, 1);
+  for (int i = 0; i < model->nClosedStates; i++)
+    eqStates_F[i] = eqStates[model->closedStates[i]];
+  for (int i = 0; i < model->nOpenStates; i++)
+    eqStates_A[i] = eqStates[model->openStates[i]];
 
   // Calculate spectral matrices and eigenvectors of current Q_FF
-  cblas_dgeev();
 
-% Calculate spectral matrices and eigenvectors of current Q_FF
-[X V] = eig(Q_FF);
-V_Q_FF = diag(V); % Eigenvectors
-Y = inv(X);
-for j = 1:length(EqStates_F)
-    SpecMat_Q_FF{j} = X(:,j)*Y(j,:); % Calculate spectral matrices
-end
+  // Calculate eigenvectors using QR decomposition in LAPACK
+  // If Q_FF is symmetric then X = Y and V_Q_FFi is all zeros (?)
+  double * V_Q_FF, * V_QFFi, * X, * Y, * workspace, worksize;
+  size_t ldx, ldy;
+  VALLOC(model->nClosedStates, V_Q_FF, 1);
+  VALLOC(model->nClosedStates, V_Q_FFi, 1);
+  MALLOC(model->nClosedStates, model->nClosedStates, X, ldx);
+  MALLOC(model->nClosedStates, model->nClosedStates, Y, ldy);
+  int lwork = -1, info;
+  dgeev_("V", "V", &model->nClosedStates, NULL, &ldq, NULL, NULL, NULL, &ldx, NULL, &ldy, &worksize, &lwork, &info);
+  if (info != 0)
+    return ION_CHANNEL_EIGENVALUE_FAILED;
+  lwork = (int)worksize;
+  VALLOC(lwork, workspace, 1);
+  dgeev_("V", "V", &model->nClosedStates, Q_FF, &ldqff, V_Q_FF, V_Q_FFi, X, &ldx, Y, &ldy, workspace, &lwork, &info);
+  if (info != 0)
+    return ION_CHANNEL_EIGENVALUE_FAILED;
+  
+  free(Q_FF);
+  free(V_Q_FFi);
+  free(workspace);
+  
+  // Invert Y using LU decomposition (as it is not symmetric positive definite)
+  int * ipiv;
+  if ((ipiv = malloc(model->nClosedStates * sizeof(int))) == NULL)
+    return ION_CHANNEL_OUT_OF_MEMORY;
+  dgetrf_(&model->nClosedStates, &model->nClosedStates, Y, &ldy, ipiv, &info);
+  if (info != 0)
+    return ION_CHANNEL_INVERSE_FAILED;
+  dgetri_(&model->nClosedStates, &model->nClosedStates, Y, &ldy, ipiv, &info);
+  if (info != 0)
+    return ION_CHANNEL_INVERSE_FAILED;
+  
+  double ** specMat_Q_FF;
+  size_t * ldspecMat_Q_FF;
+  if ((specMat_Q_FF = malloc(model->nClosedStates * sizeof(double *))) == NULL)
+    return ION_CHANNEL_OUT_OF_MEMORY;
+  if ((ldspecMat_Q_FF = malloc(model->nClosedStates * sizeof(size_t))) == NULL)
+    return ION_CHANNEL_OUT_OF_MEMORY;
+  for (int j = 0; j < model->nClosedStates; j++) {
+    MALLOC(model->nClosedStates, model->nClosedStates, specMat_Q_FF[j], ldspecMat_Q_FF[j]);
+    cblas_dgemm(CblasColMajor, CblasNoTrans, CBlasTrans, model->nClosedStates, model->nClosedStates, 1, 1.0, &X[j * ldx], 1, &Y[j], ldy, 0.0, specMat_Q_FF[j], ldspecMat_Q_FF[j]);      // Calculate spectral matrices
+  }
 
 % Calculate spectral matrices and eigenvectors of current Q_AA
 [X V] = eig(Q_AA);
