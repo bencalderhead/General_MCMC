@@ -1,111 +1,22 @@
 #include "ion.h"
 #include <stdlib.h>
+#include <stdbool.h>
 #include <math.h>
 #include <complex.h>
 #include <fenv.h>
-#include <errno.h
-
-#define ERROR_CHECK(call) \
-  do { \
-    int error = (call); \
-    if (error != 0) \
-      return error; \
-  } while (false)
-
-static inline int vector_alloc(int n, void ** x, int incx, size_t size) {
-  *x = malloc((size_t)(n * incx) * size);
-  return (*x == NULL) ? ENOMEM : 0;
-}
-
-#define vector_init(n, alpha, x, incx) \
-  do { \
-    for (int i = 0; i < (n); i++) \
-      (x)[i * (incx)] = (alpha); \
-  } while (false)
-
-#define vector_copy(n, i, x, incx, y, incy) \
-  do { \
-    if ((i) == NULL) { \
-      for (int ii = 0; ii < (n); ii++) \
-        (y)[ii * (incy)] = (x)[ii * (incx)]; \
-    } \
-    else { \
-      for (int ii = 0; ii < (n); ii++) \
-        (y)[ii * (incy)] = (x)[(i)[ii] * (incx)]; \
-    } \
-  } while (false)
-
-#define vector_log(n, x, incx, y, incy) \
-  do { \
-    for (int ii = 0; ii < (n); ii++) \
-      (y)[ii * (incy)] = log((x)[ii * (incx)]); \
-  } while (false)
-
-static inline int matrix_alloc(int m, int n, void ** A, int * lda, size_t size) {
-  const unsigned int align = 16u / size;
-  *lda = (int)(((unsigned int)m + align - 1u) & ~(align - 1u));
-  *A = malloc((size_t)(n * *lda) * size);
-  return (*A == NULL) ? OUT_OF_MEMORY : 0;
-}
-
-#define matrix_init(m, n, alpha, A, lda) \
-  do { \
-    for (int j = 0; j < (n); j++) { \
-      for (int i = 0; i < (m); i++) \
-        (A)[j * (lda) + i] = (alpha); \
-    } \
-  } while (false)
-
-#define matrix_copy(m, n, i, j, A, lda, B, ldb) \
-  do { \
-    if ((i) == NULL || (j) == NULL) { \
-      for (int jj = 0; jj < (n); jj++) { \
-        for (int ii = 0; ii < (n); ii++) \
-          (B)[jj * (ldb) + ii] = (A)[jj * (lda) + ii]; \
-      } \
-    } \
-    else { \
-      for (int jj = 0; jj < (n); jj++) { \
-        for (int ii = 0; ii < (n); ii++) \
-          (B)[jj * (ldb) + ii] = (A)[(j)[jj] * (lda) + (i)[ii]]; \
-      } \
-    } \
-  } while (false)
-
-#define diag(n, A, lda, x, incx) \
-  do { \
-    for (int i = 0; i < (n); i++) \
-      (x)[i * (incx)] = (A)[i * (lda) + i]; \
-  } while (false)
+#include <errno.h>
 
 static int eig(int, const double *, int, double complex *, int, double complex *, int);
 static int inv(int, const double *, int, double *, int);
 
-static void outer_product(int, const double *, int, const double *, int, double *, int);
-
-typedef struct {
-  double (*pdf)(double, const void *);
-  void * params;
-} prior;
-
-struct __ion_model_st {
-  int n;                // Number of parameters
-  prior * priors;       // Prior for each parameter (n of them)
-  
-  int nStates;     // Number of states
-  void (*calculate_Q_matrix)(const double *, double *, size_t);  // Function to generate the Q matrix from the current parameter values
-  int nOpenStates, nClosedStates;
-  int * openStates, * closedStates;
+struct __markov_chain_st {
+  int n;                        // Number of parameters
+  double * params;              // Parameters
+  double * log_prior;           // (log) Prior probability of parameters
+  double * log_likelihood;      // log likelihood
 };
 
-struct __markov_chain_st {
-  int n;                // Number of parameters
-  double * params;      // Parameters
-  double * logprior;    // (log) Prior probability of parameters
-  double * ll;          // log likelihood
-}
-
-int ion_evaluate_mh(const ion_model model, markov_chain chain, int * info) {
+int ion_evaluate_mh(const ion_model * model, markov_chain * chain, int * info) {
   // Calculate the prior for each parameter
   for (int i = 0; i < model->n; i++) {
     double x = model->priors[i].pdf(chain->params[i], model->prior[i].params);
@@ -416,10 +327,13 @@ static int inv(int n, const double * X, int ldx, double * Y, int ldy) {
   if (info != 0)
     return info;
 
+  // Allocate the workspace
   lwork = (int)size;
   double * work;
-  if ((work = malloc((size_t)lwork * sizeof(double))) == NULL)
+  if ((work = malloc((size_t)lwork * sizeof(double))) == NULL) {
+    free(ipiv);
     return ENOMEM;
+  }
 
   // Calculate the inverse
   dgetri_(&n, Y, &ldy, ipiv, work, &lwork, &info);
@@ -428,11 +342,4 @@ static int inv(int n, const double * X, int ldx, double * Y, int ldy) {
   free(work);
 
   return info;
-}
-
-static void outer_product(int n, const double * x, int incx, const double * y, int incy, double * A, int lda) {
-  for (int j = 0; j < n; j++) {
-    for (int i = 0; i < n; i++)
-      A[j * lda + i] = x[i * incx] * y[j * incy];
-  }
 }

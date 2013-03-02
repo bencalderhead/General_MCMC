@@ -14,7 +14,7 @@ extern "C" {
 typedef struct {
   const char * name;    // Name of the algorithm
   uint64_t min, max;    // Minimum and maximum integer values generated
-  size_t size;          // Size of state
+  size_t size;          // Size of state vector
   void (*set)(void *, uint64_t);  // Seed function
   uint64_t (*get)(void *);        // Integer generation function
   double (*get_double)(void *);   // Real generation function on (0,1)
@@ -25,20 +25,20 @@ typedef struct {
  */
 typedef struct {
   const rng_type * type;        // The type of PRNG algorithm used
-  void * state;                 // RNG state
+  void * state;                 // RNG state vector
 } rng;
 
 /**
  * Creates a new random number generator
  *
- * @param r     the created RNG is returned through this pointer
+ * @param r     the RNG to create
  * @param type  the RNG algorithm to use
  * @param seed  the seed to initialise the RNG state with
  *
- * @return 0 on success or ENOMEM if there is not enough memory to allocate a
- *         new RNG.
+ * @return 0 on success, non-zero if there is not enough memory to allocate
+ *         space for the RNG state vector.
  */
-int rng_create(rng **, const rng_type *, uint64_t);
+int rng_create(rng *, const rng_type *, uint64_t);
 
 /**
  * Destroys an RNG.

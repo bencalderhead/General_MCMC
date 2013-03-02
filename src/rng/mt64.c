@@ -16,12 +16,6 @@ typedef struct {
   int i;
 } mt64;
 
-/**
- * Re-seeds the Mersenne Twister.
- *
- * @param rng    the RNG to re-seed
- * @param seed  the new seed
- */
 static void set(void * rng, uint64_t seed) {
   mt64 * mt = (mt64 *)rng;
 
@@ -33,12 +27,6 @@ static void set(void * rng, uint64_t seed) {
   mt->i = 0;
 }
 
-/**
- * Generates a 64-bit unsigned integer uniformly distributed over [0, 2^64-1].
- *
- * @param rng  the RNG
- * @return the random integer.
- */
 static uint64_t get(void * rng) {
   mt64 * mt = (mt64 *)rng;
 
@@ -71,13 +59,6 @@ static uint64_t get(void * rng) {
   return x;
 }
 
-/**
- * Generates a double precision floating point value uniformly distributed over
- * (0, 1).
- *
- * @param mt  the PRNG
- * @return the random double precision floating point value.
- */
 static double get_double(void * rng) {
   mt64 * mt = (mt64 *)rng;
   return ((double)get(mt) + 1.0) / ((double)UINT64_MAX + 2.0);
