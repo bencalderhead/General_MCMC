@@ -5,6 +5,10 @@
 // sqrt(2.0 * M_PI)
 #define M_SQRT2PI 2.50662827463100050241
 
+typedef struct {
+  double alpha, beta;
+} gamma;
+
 static double gammln(double x) {
   // Numerical Recipes in C++, 2nd edition (section 6.1, page 219)
   static const double cof[6] = { 76.18009172947146,      -86.50532032941677,
@@ -20,16 +24,18 @@ static double gammln(double x) {
   return -tmp + log(M_SQRT2PI * ser / x);
 }
 
-static bool validate(const double * params) {
-  // Check that alpha > 0.0 and beta > 0.0
-  return params[0] > 0.0 && params[1] > 0.0;
+static bool init(void * params, va_list list) {
+  gamma * g = (gamma *)params;
+  g->alpha = va_arg(list, double);
+  g->beta = va_arg(list, double);
+  return (g->alpha > 0.0) && (g->beta > 0.0);
 }
 
-static double sample(const rng * restrict r, const double * restrict params) {
+static double sample(const rng * restrict r, const void * restrict params) {
+  gamma * g = (gamma *)params;
+
   // Numerical Recipes in C++, 3rd edition (section 7.3, page 370)
-  const double oalph = params[0];
-  const double alpha = (oalph < 1.0) ? oalph + 1.0 : oalph;
-  const double beta = params[1];
+  const double alpha = (g->alpha < 1.0) ? g->alpha + 1.0 : g->alpha;
   const double a1 = alpha - 1.0 / 3.0;
   const double a2 = 1.0 / sqrt(9.0 * a1);
 
@@ -53,28 +59,28 @@ static double sample(const rng * restrict r, const double * restrict params) {
   } while (u > 1.0 - 0.331 * x * x * x * x &&
            log(u) > 0.5 * x * x + a1 * (1.0 - v + log(v)));
 
-  return (alpha == oalph) ? a1 * v / beta :
-         pow(rng_get_double(r), 1.0 / oalph) * a1 * v / beta;
+  return (alpha == g->alpha) ? a1 * v / g->beta :
+         pow(rng_get_double(r), 1.0 / g->alpha) * a1 * v / g->beta;
 }
 
-static double evaluate(double x, const double * params) {
-  double alpha = params[0], beta = params[1];
+static double evaluate(double x, const void * params) {
+  gamma * g = (gamma *)params;
   // Numerical Recipes in C++, 3rd edition (section 6.14, page 331)
-  const double fac = alpha * log(beta) - gammln(alpha);
-  return (x <= 0.0) ? 0.0 : exp(-beta * x + (alpha - 1.0) * log(x) + fac);
+  const double fac = g->alpha * log(g->beta) - gammln(g->alpha);
+  return (x <= 0.0) ? 0.0 : exp(-g->beta * x + (g->alpha - 1.0) * log(x) + fac);
 }
 
-static double evaluate_1st_order(double x, const double * params) {
-  double alpha = params[0], beta = params[1];
-  return (x <= 0.0) ? -HUGE_VAL : (alpha - 1.0) / x - 1.0 / beta;
+static double evaluate_1st_order(double x, const void * params) {
+  gamma * g = (gamma *)params;
+  return (x <= 0.0) ? -HUGE_VAL : (g->alpha - 1.0) / x - 1.0 / g->beta;
 }
 
-static double evaluate_2nd_order(double x, const double * params) {
-  double alpha = params[0];
-  return (x <= 0.0) ? -HUGE_VAL : -(alpha - 1.0) / (x * x);
+static double evaluate_2nd_order(double x, const void * params) {
+  gamma * g = (gamma *)params;
+  return (x <= 0.0) ? -HUGE_VAL : -(g->alpha - 1.0) / (x * x);
 }
 
-static const prior_type type = { "Gamma", validate, sample, evaluate,
-                                 evaluate_1st_order, evaluate_2nd_order, 2 };
+static const prior_type type = { "Gamma", init, sample, evaluate,
+                                 evaluate_1st_order, evaluate_2nd_order, sizeof(gamma) };
 
 const prior_type * gamma_prior = &type;

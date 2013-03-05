@@ -1,110 +1,209 @@
 #include "ion.h"
 #include <stdlib.h>
-#include <stdbool.h>
 #include <math.h>
 #include <complex.h>
 #include <fenv.h>
 #include <errno.h>
 
-static int eigenvectors(int, const double *, int, double complex *, int, double complex *, int);
-static int inverse(int, const double *, int, double *, int);
-static int calculate_eq_states(unsigned int, const double * restrict, size_t, double * restrict);
-static int calculate_specmat_eigenvectors(unsigned int, const double * restrict, size_t, double * restrict, double *, size_t);
+struct __ion_workspace_st {
+  double * Q, * eq_states, * S;
+  size_t ldq;
 
-int ion_evaluate_mh(const ion_model * model, markov_chain * chain) {
+};
+
+/**
+ * Calculates the eigenvectors and eigenvalues of an n-by-n real nonsymmetric
+ * matrix A.
+ *
+ * The computed eigenvectors are normalized to have Euclidean norm equal to 1
+ * and largest component real.
+ *
+ * @param n    the size of the matrix A.
+ * @param A    a pointer to an array of size n * ldx containing the elements of
+ *               A in column major layout.  A is overwritten on output.
+ * @param lda  the leading dimension of the array A.
+ * @param B    a pointer to an array of size n * ldb.  The eigenvectors of A are
+ *               stored column by column in B.
+ * @param ldb  the leading dimension of the array B.
+ * @param x    a pointer to an array of size n.  The eigenvalues of A are stored
+ *               in x.
+ */
+static void eigen(int, double *, int, double complex *, int, double complex *);
+static int inv(int, const double *, int, double *, int);
+
+int ion_model_create(ion_model * restrict model, unsigned int open, unsigned int closed, void (*update_q)(const double *, double *, size_t)) {
+  int error = mcmc_model_create(&model->m);
+  if (error != 0)
+    return error;
+
+  model->open = open;
+  model->closed = closed;
+  model->update_q = update_q;
+
+  // Work out the workspace size
+  size_t w = 0;
+
+  // n is the total number of states
+  unsigned int n = open + closed;
+  size_t ld = ((n + 1u) & ~1u) * sizeof(double);        // n rounded up to the alignment
+
+  w += 2 * n * ld + ld;
+
+  ld = ((closed + 1u) & ~1u) * sizeof(double);
+  w +=
+
+  if ((model->workspace = malloc(sizeof(ion_workspace))) == NULL)
+    return ENOMEM;
+
+  return 0;
+}
+
+void ion_model_destroy(ion_model * model) {
+  mcmc_model_destroy(&model->m);
+  return 0;
+}
+
+int ion_evaluate_mh(const ion_model * restrict model, markov_chain * restrict chain) {
+  int error;
+
   // Calculate the prior for each parameter
   for (int i = 0; i < model->n; i++) {
     double x = prior_evaluate(&model->priors[i], chain->params[i]);
-    if (x <= 0.0)
-      return ION_CHANNEL_PROPOSAL_OUTWITH_PRIOR;
+    if (isnan(x) || islessequal(x, 0.0))
+      return EDOM;
     chain->logprior[i] = log(x);
   }
 
 
   // Calculate the likelihood of the ion channel data
 
-  // Calculate the Q matrix
   unsigned int states = model->open + model->closed;
-  double * Q;
-  size_t ldq;
-  if ((Q = malloc(states * (ldq = ((states + 1u) & ~1u)) * sizeof(double))) == NULL)
-    return ENOMEM;
+
+  // Allocate memory for the Q matrix and equilibrium states
+  double * Q = model->workspace;                // states * ldq
+  double * eq_states = &Q[states * ldq];        // states
+  size_t ldq = (states + 1u) & ~1u;
+
+  // Calculate the Q matrix
   model->update_q(chain->params, Q, ldq);
 
-  // Split up the Q matrix into its component matrices  
-  double * Q_FF = model->Q;
-  double * Q_FA = &model->Q[model->open * model->ldq];
-  double * Q_AF = &model->Q[model->open];
-  double * Q_AA = &model->Q[model->open * model->ldq + model->open];
-  
-
   // Calculate equilibrium state occupancies
-  double * eq_states;
-  if ((eq_states = malloc(states * sizeof(double))) == NULL)
-    return ENOMEM;
-  calculate_eq_states(states, Q, ldq, eq_states);
+  double * S = &eq_states[ldq];                 // states * lds
+  size_t lds = ldq;
 
+  for (int j = 0; j < states; j++) {
+    for (int i = 0; i < states; i++)
+      S[j * lds + i] = 1.0;
+    eq_states[j] = 1.0;
+  }
+
+  cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans, states, states, states, 1.0, Q, ldq, Q, ldq, 1.0, S, lds);
+
+  feclearexcept(FE_ALL_EXCEPT);
+  cblas_dgesv(CblasColMajor, CblasUpper, CblasNoTrans, CblasNonUnit, states, S, lds, eq_states, 1);
+  if (fetestexcept(FE_DIVBYZERO | FE_OVERFLOW | FE_UNDERFLOW | FE_INVALID) != 0)
+    return ERANGE;
+
+  // Split up the Q matrix into its component matrices
+  double * Q_FF = Q;
+  double * Q_FA = &Q[model->open * ldq];
+  double * Q_AF = &Q[model->open];
+  double * Q_AA = &Q[model->open * ldq + model->open];
+
+  // Split up the equilibrium states
   double * eq_states_F = eq_states;
   double * eq_states_A = &eq_states[model->open];
-  
+
 
   // Calculate spectral matrices and eigenvectors of current Q_FF
-  double * v_Q_FF, * specMat_Q_FF;
-  size_t ldsqff;
-  if ((v_Q_FF = malloc(model->closed * sizeof(double))) == NULL)
-    return ENOMEM;
-  if ((specMat_Q_FF = malloc(model->closed * model->closed * (ldsqff = ((model->closed + 1u) & ~1u)) * sizeof(double))) == NULL)
-    return ENOMEM;
-  calculate_specmat_eigenvectors(model->closed, Q_FF, ldq, v_Q_FF, specMat_Q_FF, ldsqff);
+  double * v_Q_FF = &eq_states[];
+  double * specMat_Q_FF = malloc(model->closed * model->closed * ldsqff * sizeof(double));
+  size_t ldsqff = (model->closed + 1u) & ~1u;
+
+  size_t ldx = (model->closed + 1u) & ~1u;
+  double * X = malloc(model->closed * ldx * sizeof(double));
+  eig(model->closed, Q_FF, ldq, X, ldx, v_Q_FF);
+
+  size_t ldy = (model->closed + 1u) & ~1u;
+  double * Y = malloc(model->closed * ldy * sizeof(double));
+  inv(model->closed, X, ldx, Y, ldy);
+
+  for (int j = 0; j < n; j++)
+    cblas_zgemm(CblasColMajor, CblasNoTrans, CblasTrans,
+                model->closed, model->closed, model->closed,
+                1.0, &X[j * ldx], ldx, Y[j], ldy,
+                0.0, &specMat_Q_FF[j * model->closed * lds], ldsqff);
+
+  free(X);
+  free(Y);
 
   // Calculate spectral matrices and eigenvectors of current Q_AA
-  double * v_Q_AA, * specMat_Q_AA;
-  size_t ldsqaa;
-  if ((v_Q_AA = malloc(model->open * sizeof(double))) == NULL)
-    return ENOMEM;
-  if ((specMat_Q_AA = malloc(model->open * model->open * (ldsqff = ((model->open + 1u) & ~1u)) * sizeof(double))) == NULL)
-    return ENOMEM;
-  calculate_specmat_eigenvectors(model->open, Q_AA, lda, v_Q_AA, specMat_Q_AA, ldsqaa);
+  size_t ldsqaa = (model->open + 1u) & ~1u;
+  double complex * v_Q_AA = malloc(model->open * sizeof(double complex));
+  double complex * specMat_Q_AA = malloc(model->open * model->open * ldsqaa * sizeof(double complex));
+
+  ldx = (model->open + 1u) & ~1u;
+  X = malloc(model->open * ldx * sizeof(double complex));
+  eig(model->open, Q_AA, ldq, X, ldx, v_Q_AA);
+
+  ldy = (model->open + 1u) & ~1u;
+  Y = malloc(model->open * ldy * sizeof(double complex));
+  inv(model->open, X, ldx, Y, ldy);
+
+  for (int j = 0; j < n; j++)
+    cblas_zgemm(CblasColMajor, CblasNoTrans, CblasTrans,
+                model->open, model->open, model->open,
+                1.0, &X[j * ldx], ldx, Y[j], ldy,
+                0.0, &specMat_Q_AA[j * model->open * lds], ldsqaa);
+
+  free(X);
+  free(Y);
 
 
   // Calculate initial vectors for current state
   double * L =  (model->data[0] == 0) ? eqStates_F : eqStates_A;
 
 
+  mcmc_model * m = model->m;
   // Do in a slow loop to begin with
-  for (int i = 0; i < model->n_time_points - 1; i++) {
-    if (mode->data[i] == 0) {   // Currently in closed state (denoted F in literature)
+  for (int i = 0; i < m->n_time_points - 1; i++) {
+    double sojourn = m->time_points[i + 1] - m->time_points[i]; // Get time interval to next move
 
-      // Moving to open state
-      double sojourn = model->time_points[i + 1] - model->time_points[i]; // Get time interval to next move
+    if (m->data[i] == 0) {   // Currently in closed state (denoted F in literature)
 
       // Calculate idealised transition probability from closed to open
 
-      double * G_FA;
-      int ldgfa;
-      ERROR_CHECK(matrix_alloc(model->nClosedStates, model->nClosedStates, (void **)&G_FA, &ldgfa, sizeof(double)));
-      matrix_init(model->nClosedStates, model->nClosedStates, 0.0, G_FA, ldgfa);
+      size_t ldgfa = (model->closed + 1u) & ~1u;
+      double complex * G_FA = malloc(model->closed * ldgfa * sizeof(double complex));
 
-      for (int j = 0; j < model->nClosedStates; j++) {
-        double alpha = exp(V_Q_FF[j] * sojourn);
-        for (int k = 0; k < model->nClosedStates; k++)
-          cblas_daxpy(model->nClosedStates, alpha, &SpecMat_Q_FF[j][k * ldspecMat_Q_FF[j]], 1, &G_FA[k * ldgfa], 1);
+      for (int j = 0; j < model->closed; j++) {
+        for (int i = 0; i < model->closed; i++)
+          G_FA[j * ldgfa + i] = 0.0;
       }
 
-      double * T;
-      int ldt;
-      ERROR_CHECK(matrix_alloc(model->nClosedStates, model->nClosedStates, (void **)&T, &ldt, sizeof(double)));
-      matrix_copy(model-nClosedStates, model-nClosedStates, G_FA, ldgfa, T, ldt);
-      cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, model-nClosedStates, model-nClosedStates, model-nClosedStates, 1.0, T, ldt, Q_FA, ldqfa, 1.0, G_FA, ldqfa);
+      for (int k = 0; k < model->closed; k++) {
+        double alpha = cexp(V_Q_FF[j] * sojourn);
+        double complex * specMat = &specMat_Q_FF[k * model->closed * ldsqff];
+        for (int j = 0; j < model->closed; j++) {
+          for (int i = 0; i < model->closed; i++)
+            G_FA[j * lda + i] += alpha * specMat[j * ldsqff + i];
+        }
+      }
+
+      size_t ldt = (model->closed + 1u) & ~1u;
+      double complex * T = malloc(model->closed * ldt * sizeof(double complex));
+      for (int j = 0; j < model->closed; j++) {
+        for (int i = 0; i < model->closed; i++)
+          T[j * ldt + i] = G_FA[j * ldgfa + i];
+      }
+      cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, model->closed, model->closed, model->closed, 1.0, T, ldt, Q_FA, ldqfa, 1.0, G_FA, ldqfa);
       free(T);
 
       // Logarithmic update
       // Calculate log(L*G_FA) in terms of LL = log(L) and log(G_FA)
-      Log_G_FA = log(G_FA);
-
       // Do element-wise logarithmic calculation
       // log (vector * matrix) in terms of log(vector) and log(matrix)
-      LL = dlngevm(LL, Log_G_FA);
+      cblas_dlngevm(CblasTrans, 1.0, G_FA, ldgfa, LL, 1, 0.0, LL, 1);
     }
     else {      // Currently in open state (denoted A in literature)
 
@@ -284,10 +383,10 @@ static int inv(int n, const double * X, int ldx, double * Y, int ldy) {
   return info;
 }
 
-static int calculate_eq_states(unsigned int n, const double * restrict Q, size_t ldq, double * restrict eq_states) {
-  double * S;
-  size_t lds;
-  if ((S = malloc(n * (lds = ((n + 1u) & ~1u)) * sizeof(double))) == NULL)
+static int calculate_equilibrium_state_occupancies(unsigned int n, const double * restrict Q, size_t ldq, double * restrict eq_states) {
+  size_t lds = (n + 1u) & ~1u;
+  double * S = malloc(n * lds * sizeof(double));
+  if (S == NULL)
     return ENOMEM;
 
   for (int j = 0; j < n; j++) {
@@ -297,11 +396,15 @@ static int calculate_eq_states(unsigned int n, const double * restrict Q, size_t
   }
 
   cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans, n, n, n, 1.0, Q, ldq, Q, ldq, 1.0, S, lds);
-  feclearexcept(FE_DIVBYZERO);
+
+  feclearexcept(FE_ALL_EXCEPT);
   cblas_dgesv(CblasColMajor, CblasUpper, CblasNoTrans, CblasNonUnit, n, S, lds, eq_states, 1);
+
   free(S);
-  if (fegetexcept(FE_DIVBYZERO) != 0)
-    return ION_CHANNEL_NUMERICAL_INSTABILITY;
+
+  if (fetestexcept(FE_DIVBYZERO | FE_OVERFLOW | FE_UNDERFLOW | FE_INVALID) != 0)
+    return ERANGE;
+
   return 0;
 }
 

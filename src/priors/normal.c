@@ -5,11 +5,19 @@
 // sqrt(2.0 * M_PI)
 #define M_SQRT2PI 2.50662827463100050241
 
-static bool validate(const double * params) {
-  return params[1] > 0.0;       // Check that stddev > 0.0
+typedef struct {
+  double mean, stddev;
+} normal;
+
+static bool init(void * params, va_list list) {
+  normal * n = (normal *)params;
+  n->mean = va_arg(list, double);
+  n->stddev = va_arg(list, double);
+  return (n->stddev > 0.0);
 }
 
-static double sample(const rng * restrict r, const double * restrict params) {
+static double sample(const rng * restrict r, const void * restrict params) {
+  normal * n = (normal *)params;
   // Numerical Recipes in C++, 3rd edition (section 7.3, page 369)
 
   double u, v, q;
@@ -21,27 +29,27 @@ static double sample(const rng * restrict r, const double * restrict params) {
     q = x * x + y * (0.19600 * y - 0.25472 * x);
   } while (q > 0.27597 && (q > 0.27846 || v * v > -4.0 * log(u) * u * u));
 
-  return params[0] + params[1] * v / u;
+  return n->mean + n->stddev * v / u;
 }
 
-static double evaluate(double x, const double * params) {
-  double mean = params[0], stddev = params[1];
-  return 1.0 / (stddev * M_SQRT2PI) *
-  exp(-((x - mean) * (x - mean)) / (2.0 * stddev * stddev));
+static double evaluate(double x, const void * params) {
+  normal * n = (normal *)params;
+  return 1.0 / (n->stddev * M_SQRT2PI) *
+  exp(-((x - n->mean) * (x - n->mean)) / (2.0 * n->stddev * n->stddev));
 }
 
-static double evaluate_1st_order(double x, const double * params) {
-  double mean = params[0], stddev = params[1];
-  return -(x - mean) / (stddev * stddev);
+static double evaluate_1st_order(double x, const void * params) {
+  normal * n = (normal *)params;
+  return -(x - n->mean) / (n->stddev * n->stddev);
 }
 
-static double evaluate_2nd_order(double x, const double * params) {
+static double evaluate_2nd_order(double x, const void * params) {
   (void)x;
-  double stddev = params[1];
-  return -1.0 / (stddev * stddev);
+  normal * n = (normal *)params;
+  return -1.0 / (n->stddev * n->stddev);
 }
 
-static const prior_type type = { "Normal", validate, sample, evaluate,
-                                 evaluate_1st_order, evaluate_2nd_order, 2 };
+static const prior_type type = { "Normal", init, sample, evaluate,
+                                 evaluate_1st_order, evaluate_2nd_order, sizeof(normal) };
 
 const prior_type * normal_prior = &type;

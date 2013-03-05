@@ -2,6 +2,7 @@
 #define PRIORS_H
 
 #include <stdbool.h>
+#include <stdarg.h>
 #include "rng.h"
 
 #ifdef __cplusplus
@@ -9,24 +10,24 @@ extern "C" {
 #endif
 
 /**
- * Prior type.
+ * Prior type (univariate and continuous).
  */
 typedef struct {
   const char * name;    // Name of the distribution
-  bool (*validate)(const double *);     // Function to check parameter values
-  double (*sample)(const rng *, const double *);        // Sample function
-  double (*evaluate)(double, const double *);           // Evaluate function
-  double (*evaluate_1st_order)(double, const double *); // 1st order derivative evaluate function
-  double (*evaluate_2nd_order)(double, const double *); // 2nd order derivative evaluate function
-  int n;                // Number of parameters
+  bool (*init)(void *, va_list);        // Function to initialise and check parameter values
+  double (*sample)(const rng * restrict, const void * restrict);        // Sample function
+  double (*evaluate)(double, const void *);           // Evaluate function
+  double (*evaluate_1st_order)(double, const void *); // 1st order derivative evaluate function
+  double (*evaluate_2nd_order)(double, const void *); // 2nd order derivative evaluate function
+  size_t n;             // Amount of memory needed to store parameters
 } prior_type;
 
 /**
- * Prior.
+ * Prior (univariate and continuous).
  */
 typedef struct {
   const prior_type * type;      // Type of prior
-  double * params;              // Parameter vector
+  void * params;              // Parameter vector
 } prior;
 
 /**
@@ -39,7 +40,7 @@ typedef struct {
  * @return 0 on success, non-zero if there is not enough memory to allocate
  * space for the parameter vector or the parameter values are invalid.
  */
-int prior_create(prior *, const prior_type *, ...);
+int prior_create(prior * restrict, const prior_type * restrict, ...);
 
 /**
  * Destroys a prior distribution.
@@ -49,6 +50,18 @@ int prior_create(prior *, const prior_type *, ...);
 void prior_destroy(prior *);
 
 /**
+ * Initialises a new prior distribution to be a copy of another prior
+ * distribution.
+ *
+ * @param dest  the destination prior
+ * @param src   the source prior
+ *
+ * @return 0 on success, non-zero if there is not enough memory to allocate
+ * space for the parameter vector.
+ */
+int prior_copy(prior * restrict, const prior * restrict);
+
+/**
  * Generates a sample from a prior distribution.
  *
  * @param p  a prior distribution
@@ -56,7 +69,7 @@ void prior_destroy(prior *);
  *
  * @return a sample from the prior
  */
-static inline double prior_sample(const prior * p, const rng * r) {
+static inline double prior_sample(const prior * restrict p, const rng * restrict r) {
   return p->type->sample(r, p->params);
 }
 
