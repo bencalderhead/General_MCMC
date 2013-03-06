@@ -149,25 +149,27 @@ block * block_alloc(mempool * pool) {
   b->next = pool->allocated;
   pool->allocated = b;
   b->prev = NULL;
+  if (b->next != NULL)
+    b->next->prev = b;
 
   return b;
 }
 
 void block_free(block * b) {
   // Remove the block from the list of allocated blocks
-  if (b->prev != NULL)
+  if (b->pool->allocated == b)
+    b->pool->allocated = b->next;
+  else
     b->prev->next = b->next;
   if (b->next != NULL)
     b->next->prev = b->prev;
-  if (b->pool->allocated == b)
-    b->pool->allocated = b->pool->allocated->next;
 
   // Add the block to list of available blocks
-  b->prev = NULL;
   b->next = b->pool->available;
+  b->pool->available = b;
+  b->prev = NULL;
   if (b->next != NULL)
     b->next->prev = b;
-  b->pool->available = b;
 }
 
 int main() {
@@ -179,9 +181,9 @@ int main() {
   a = block_alloc(pool);
   b = block_alloc(pool);
   c = block_alloc(pool);
-//   block_free(c);
-//   d = block_alloc(pool);
-//   c = block_alloc(pool);
+  block_free(c);
+  d = block_alloc(pool);
+  c = block_alloc(pool);
   block_free(a);
   block_free(b);
   block_free(c);

@@ -14,7 +14,7 @@ typedef struct __ion_model_st {
   int open, closed;          // Number of states (open and closed)
   void (*update_q)(const double *, double *, size_t);   // Function to update Q matrix based on current parameter values
 
-  double * workspace;
+  void * workspace;
 } ion_model;
 
 int ion_model_create(ion_model * restrict, int, int, void (*)(const double *, double *, size_t));

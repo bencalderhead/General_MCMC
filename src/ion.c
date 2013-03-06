@@ -5,12 +5,6 @@
 #include <fenv.h>
 #include <errno.h>
 
-struct __ion_workspace_st {
-  double * Q, * eq_states, * S;
-  size_t ldq;
-
-};
-
 /**
  * Calculates the eigenvectors and eigenvalues of an n-by-n real nonsymmetric
  * matrix A.
@@ -31,7 +25,10 @@ struct __ion_workspace_st {
 static void eigen(int, double *, int, double complex *, int, double complex *);
 static int inv(int, const double *, int, double *, int);
 
-int ion_model_create(ion_model * restrict model, unsigned int open, unsigned int closed, void (*update_q)(const double *, double *, size_t)) {
+int ion_model_create(ion_model * restrict model, int open, int closed, void (*update_q)(const double *, double *, size_t)) {
+  if (open <= 0 || closed <= 0)
+    return EINVAL;
+
   int error = mcmc_model_create(&model->m);
   if (error != 0)
     return error;
@@ -44,10 +41,11 @@ int ion_model_create(ion_model * restrict model, unsigned int open, unsigned int
   size_t w = 0;
 
   // n is the total number of states
-  unsigned int n = open + closed;
+  unsigned int n = (unsigned int)(open + closed);
   size_t ld = ((n + 1u) & ~1u) * sizeof(double);        // n rounded up to the alignment
-
-  w += 2 * n * ld + ld;
+  w += n * ld;  // Q matrix
+  w += ld;      // eq_states
+  w += n * ld;  // Temporary matrix S to calculate eq_states
 
   ld = ((closed + 1u) & ~1u) * sizeof(double);
   w +=
@@ -77,7 +75,7 @@ int ion_evaluate_mh(const ion_model * restrict model, markov_chain * restrict ch
 
   // Calculate the likelihood of the ion channel data
 
-  unsigned int states = model->open + model->closed;
+  int states = model->open + model->closed;
 
   // Allocate memory for the Q matrix and equilibrium states
   double * Q = model->workspace;                // states * ldq
@@ -116,13 +114,12 @@ int ion_evaluate_mh(const ion_model * restrict model, markov_chain * restrict ch
 
 
   // Calculate spectral matrices and eigenvectors of current Q_FF
-  double * v_Q_FF = &eq_states[];
-  double * specMat_Q_FF = malloc(model->closed * model->closed * ldsqff * sizeof(double));
-  size_t ldsqff = (model->closed + 1u) & ~1u;
+  size_t ldqff = ((unsigned int)model->closed + 1u) & ~1u;
+  double * v_Q_FF = &eq_states[ldq];    // Reuse space for S
+  double * specMat_Q_FF = &v_Q_FF[ldqff];
 
-  size_t ldx = (model->closed + 1u) & ~1u;
-  double * X = malloc(model->closed * ldx * sizeof(double));
-  eig(model->closed, Q_FF, ldq, X, ldx, v_Q_FF);
+  double * X = &specMat_Q_FF[model->closed * model->closed * ldsqff];
+  eig(model->closed, Q_FF, ldq, X, ldqff, v_Q_FF);
 
   size_t ldy = (model->closed + 1u) & ~1u;
   double * Y = malloc(model->closed * ldy * sizeof(double));
