@@ -82,11 +82,11 @@ struct __block_st {
 void * block_ptr(block * b) { return b->aligned; }
 const void * block_ptr_const(const block * b) { return b->aligned; }
 
-typedef struct __mempool_st {
+struct __mempool_st {
   block * allocated;
   block * available;
   size_t size;
-} mempool;
+};
 
 mempool * mempool_alloc(size_t n) {
   mempool * pool = malloc(sizeof(struct __mempool_st));
@@ -172,23 +172,47 @@ void block_free(block * b) {
     b->next->prev = b;
 }
 
+#include <stdio.h>
+#include <time.h>
+
 int main() {
-  mempool * pool;
-  block * a, * b, * c, * d;
+//   mempool * pool;
+  void * a[1000];
 
-  pool = mempool_alloc(sizeof(double));
+//   pool = mempool_alloc(sizeof(double));
 
-  a = block_alloc(pool);
-  b = block_alloc(pool);
-  c = block_alloc(pool);
-  block_free(c);
-  d = block_alloc(pool);
-  c = block_alloc(pool);
-  block_free(a);
-  block_free(b);
-  block_free(c);
+  struct timespec start, stop;
+  if (clock_gettime(CLOCK_REALTIME, &start) != 0) {
+    fputs("clock_gettime failed\n", stderr);
+    return -1;
+  }
+  for (int i = 0; i < 1000; i++)
+    a[i] = malloc(sizeof(double));
+  if (clock_gettime(CLOCK_REALTIME, &stop) != 0) {
+    fputs("clock_gettime failed\n", stderr);
+    return -1;
+  }
+  double time = ((double)(stop.tv_sec - start.tv_sec) +
+                 (double)(stop.tv_nsec - start.tv_nsec) * 1.e-6);
 
-  mempool_free(pool);
+  fprintf(stdout, "Average time to allocate %zu bytes: %.3ems\n", sizeof(double), time);
+
+  if (clock_gettime(CLOCK_REALTIME, &start) != 0) {
+    fputs("clock_gettime failed\n", stderr);
+    return -1;
+  }
+  for (int i = 0; i < 1000; i++)
+    free(a[i]);
+  if (clock_gettime(CLOCK_REALTIME, &stop) != 0) {
+    fputs("clock_gettime failed\n", stderr);
+    return -1;
+  }
+  time = ((double)(stop.tv_sec - start.tv_sec) +
+          (double)(stop.tv_nsec - start.tv_nsec) * 1.e-6);
+
+  fprintf(stdout, "Average time to free %zu bytes: %.3ems\n", sizeof(double), time);
+
+//   mempool_free(pool);
 
   return 0;
 }

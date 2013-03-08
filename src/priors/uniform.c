@@ -1,4 +1,4 @@
-#include "priors.h"
+#include "mcmc/priors.h"
 
 #include <math.h>
 
@@ -13,9 +13,9 @@ static bool init(void * params, va_list list) {
   return (u->lower < u->upper);
 }
 
-static double sample(const rng * restrict r, const void * restrict params) {
+static double sample(const mcmc_rng r, const void * params) {
   uniform * u = (uniform *)params;
-  return u->lower + rng_get_double(r) * (u->upper - u->lower);
+  return u->lower + mcmc_rng_get_double(r) * (u->upper - u->lower);
 }
 
 static double evaluate(double x, const void * params) {
@@ -33,7 +33,7 @@ static double evaluate_2nd_order(double x, const void * params) {
   return (x <= u->lower || x >= u->upper) ? -HUGE_VAL : 0.0;
 }
 
-static const prior_type type = { "Uniform", init, sample, evaluate,
-                                 evaluate_1st_order, evaluate_2nd_order, sizeof(uniform) };
+static struct __mcmc_prior_type_st type = { "Uniform", init, sample, evaluate,
+                                            evaluate_1st_order, evaluate_2nd_order, sizeof(uniform) };
 
-const prior_type * uniform_prior = &type;
+const mcmc_prior_type mcmc_prior_uniform = &type;

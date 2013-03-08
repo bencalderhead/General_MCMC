@@ -1,4 +1,4 @@
-#include "rng.h"
+#include "mcmc/rng.h"
 
 #define NN 312
 #define MM 156
@@ -64,8 +64,8 @@ static double get_double(void * rng) {
   return ((double)get(mt) + 1.0) / ((double)UINT64_MAX + 2.0);
 }
 
-static const rng_type mt64_type = {
+static struct __mcmc_rng_type_st mt64_type = {
   "Mersenne Twister 64-bit", 0, UINT64_MAX, sizeof(mt64), set, get, get_double
 };
 
-const rng_type * mt19937_64 = &mt64_type;
+const mcmc_rng_type mcmc_rng_mt19937_64 = &mt64_type;
