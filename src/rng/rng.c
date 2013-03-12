@@ -1,89 +1,169 @@
-#include "mcmc/rng.h"
+#include "gmcmc/rng.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 /**
  * Random number generator.
  */
-struct __mcmc_rng_st {
-  mcmc_rng_type type;        // The type of PRNG algorithm used
-  void * state;                 // RNG state vector
+struct __gmcmc_rng_st {
+  gmcmc_rng_type * type;        /**< The type of PRNG algorithm used */
+  void * state;                 /**< RNG state vector */
 };
 
-/**
- * Creates a new random number generator
+/*!
+ * Creates a new random number generator and initialises it with a seed.
  *
- * @param r     the RNG to create
- * @param type  the RNG algorithm to use
- * @param seed  the seed to initialise the RNG state with
+ * @param [out] r     the RNG to create
+ * @param [in]  type  the RNG algorithm to use
+ * @param [in]  seed  the seed to initialise the RNG state with
  *
- * @return MCMC_SUCCESS if the RNG was created successfully,
- *         MCMC_ERROR_INVALID_ARGUMENT if an invalid rng type was passed to the
- *                   function,
- *         MCMC_ERROR_OUT_OF_MEMORY if there was not enough memory to allocate
- *                   the RNG or state vector.
+ * @return GMCMC_SUCCESS if the RNG was created successfully,
+ *         GMCMC_ERROR_INVALID_ARGUMENT if type is not a valid RNG type,
+ *         GMCMC_ERROR_OUT_OF_MEMORY if there was not enough memory to allocate
+ *         the RNG state vector.
  */
-mcmc_error mcmc_rng_create(mcmc_rng * r, const mcmc_rng_type type, uint64_t seed) {
-  // Check the rng type is valid
-  if (type->name == NULL ||
-      type->max <= type->min ||
-      type->set == NULL ||
-      type->get == NULL ||
-      type->get_double == NULL)
-    return MCMC_ERROR_INVALID_ARGUMENT;
-
-  if ((*r = malloc(sizeof(struct __mcmc_rng_st))) == NULL)
-    return MCMC_ERROR_OUT_OF_MEMORY;
-
-  // Allocate space for the state vector
-  if (((*r)->state = malloc(type->size)) == NULL) {
-    free(*r);
-    return MCMC_ERROR_OUT_OF_MEMORY;
+gmcmc_error gmcmc_rng_create(gmcmc_rng ** r, const gmcmc_rng_type * type,
+                             uint64_t seed) {
+  // Check the RNG type passed
+  if (type->name == NULL || type->min >= type->max || type->set == NULL ||
+      type->get == NULL || type->get_double == NULL) {
+    GMCMC_ERROR_HANDLER(GMCMC_ERROR_INVALID_ARGUMENT);
+    return GMCMC_ERROR_INVALID_ARGUMENT;
   }
 
-  (*r)->type = type;       // Store a pointer to the type of RNG created
-  mcmc_rng_set(*r, seed);  // Seed the RNG to initialise the state vector
+  // Allocate space for the RNG
+  if ((*r = malloc(sizeof(struct __gmcmc_rng_st))) == NULL) {
+    GMCMC_ERROR_HANDLER(GMCMC_ERROR_OUT_OF_MEMORY);
+    return GMCMC_ERROR_OUT_OF_MEMORY;
+  }
 
-  return MCMC_SUCCESS;
+  // Allocate space for a copy of the type and for the state vector
+  if (((*r)->type == malloc(sizeof(gmcmc_rng_type))) == NULL || 
+      ((*r)->state = malloc(type->size)) == NULL) {
+    free((*r)->type);
+    free((*r)->state);
+    free(*r);
+    GMCMC_ERROR_HANDLER(GMCMC_ERROR_OUT_OF_MEMORY);
+    return GMCMC_ERROR_OUT_OF_MEMORY;
+  }
+
+  // Copy the type
+  (*r)->type = memcpy((*r)->type, type, sizeof(gmcmc_rng_type));
+  
+  // Seed the RNG to initialise the state vector
+  gmcmc_rng_set(*r, seed);
+
+  return GMCMC_SUCCESS;
 }
 
-/**
+/*!
+ * Creates a random number generator which is a duplicate of an existing random
+ * number generator.
+ *
+ * @param [out] r  the random number generator to create
+ * @param [in]  s  the random number generator to copy
+ *
+ * @return GMCMC_SUCCESS if the prior was created successfully,
+ *         GMCMC_ERROR_OUT_OF_MEMORY if there was not enough memory to allocate
+ *         the RNG state vector.
+ */
+gmcmc_error gmcmc_rng_create_copy(gmcmc_rng ** r, const gmcmc_rng * s) {
+  if ((*r = malloc(sizeof(struct __gmcmc_rng_st))) == NULL) {
+    GMCMC_ERROR_HANDLER(GMCMC_ERROR_OUT_OF_MEMORY);
+    return GMCMC_ERROR_OUT_OF_MEMORY;
+  }
+
+  // Allocate space for a copy of the type and for the state vector
+  if (((*r)->type == malloc(sizeof(gmcmc_rng_type))) == NULL || 
+      ((*r)->state = malloc(s->type->size)) == NULL) {
+    free((*r)->type);
+    free((*r)->state);
+    free(*r);
+    GMCMC_ERROR_HANDLER(GMCMC_ERROR_OUT_OF_MEMORY);
+    return GMCMC_ERROR_OUT_OF_MEMORY;
+  }
+
+  // Copy the type and state vector
+  (*r)->type = memcpy((*r)->type, s->type, sizeof(gmcmc_rng_type));
+  (*r)->state = memcpy((*r)->state, s->state, s->type->size);
+
+  return GMCMC_SUCCESS;
+}
+
+/*!
+ * Copies a random number generator into an existing random number generator.
+ * If the source and destination RNGs have types with different sizes of state
+ * this function will resize the destination RNG state vector.
+ * 
+ * @param [out] r  the destination RNG
+ * @param [in]  s  the source RNG
+ *
+ * @return GMCMC_SUCCESS if the RNG was created successfully,
+ *         GMCMC_ERROR_OUT_OF_MEMORY if there was not enough memory to allocate
+ *         the RNG state vector.
+ */
+gmcmc_error gmcmc_rng_copy(gmcmc_rng * r, const gmcmc_rng * s) {
+  // If source == destination return now
+  if (r == s)
+    return GMCMC_SUCCESS;
+  
+  // If the RNGs have different sizes of state vectors
+  if (r->type->size != s->type->size) {
+    free(r->state);     // Free existing state vector
+
+    // Allocate space for new state vector
+    if ((r->state = malloc(s->type->size)) == NULL) {
+      GMCMC_ERROR_HANDLER(GMCMC_ERROR_OUT_OF_MEMORY);
+      return GMCMC_ERROR_OUT_OF_MEMORY;
+    }
+  }
+
+  // Copy the type and state vector
+  r->type = memcpy(r->type, s->type, sizeof(gmcmc_rng_type));
+  r->state = memcpy(r->state, s->state, s->type->size);
+
+  return GMCMC_SUCCESS;
+}
+
+/*!
  * Destroys an RNG.
  *
- * @param r  the RNG to destroy
+ * @param [in] r  the RNG to destroy
  */
-void mcmc_rng_destroy(mcmc_rng r) {
-  free(r->state);       // Free the state vector
+void gmcmc_rng_destroy(gmcmc_rng * r) {
+  free(r->type);
+  free(r->state);
   free(r);
 }
 
-/**
+/*!
  * (Re)seeds a random number generator.
  *
- * @param r     the RNG to (re)seed
- * @param seed  the new seed
+ * @param [in] r     the RNG to (re)seed
+ * @param [in] seed  the new seed
  */
-void mcmc_rng_set(mcmc_rng r, uint64_t seed) {
+void gmcmc_rng_set(gmcmc_rng * r, uint64_t seed) {
   r->type->set(r->state, seed);
 }
 
-/**
+/*!
  * Generates a random integer uniformly distributed over the range [min, max].
  *
- * @param r  the random number generator
+ * @param [in] r  the random number generator
  * @return a random integer.
  */
-uint64_t mcmc_rng_get(const mcmc_rng r) {
+uint64_t gmcmc_rng_get(const gmcmc_rng * r) {
   return r->type->get(r->state);
 }
 
-/**
+/*!
  * Generates a random double precision real floating point value uniformly
  * distributed over the range (0, 1).
  *
- * @param r  the random number generator
+ * @param [in] r  the random number generator
  * @return a random real.
  */
-double mcmc_rng_get_double(const mcmc_rng r) {
+double gmcmc_rng_get_double(const gmcmc_rng * r) {
   return r->type->get_double(r->state);
 }

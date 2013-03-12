@@ -1,4 +1,4 @@
-#include "mcmc/priors.h"
+#include "gmcmc/priors.h"
 
 #include <math.h>
 
@@ -16,14 +16,14 @@ static bool init(void * params, va_list list) {
   return (n->stddev > 0.0);
 }
 
-static double sample(const mcmc_rng r, const void * params) {
+static double sample(const gmcmc_rng * r, const void * params) {
   normal * n = (normal *)params;
   // Numerical Recipes in C++, 3rd edition (section 7.3, page 369)
 
   double u, v, q;
   do {
-    u = mcmc_rng_get_double(r);
-    v = 1.7156 * (mcmc_rng_get_double(r) - 0.5);
+    u = gmcmc_rng_get_double(r);
+    v = 1.7156 * (gmcmc_rng_get_double(r) - 0.5);
     double x = u - 0.449871;
     double y = fabs(v) + 0.386595;
     q = x * x + y * (0.19600 * y - 0.25472 * x);
@@ -49,7 +49,7 @@ static double evaluate_2nd_order(double x, const void * params) {
   return -1.0 / (n->stddev * n->stddev);
 }
 
-static struct __mcmc_prior_type_st type = { "Normal", init, sample, evaluate,
-                                            evaluate_1st_order, evaluate_2nd_order, sizeof(normal) };
+static const struct __gmcmc_prior_type_st type = { "Normal", init, sample, evaluate,
+                                                   evaluate_1st_order, evaluate_2nd_order, sizeof(normal) };
 
-const mcmc_prior_type mcmc_prior_normal = &type;
+const gmcmc_prior_type * gmcmc_prior_normal = &type;

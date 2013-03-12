@@ -1,4 +1,4 @@
-#include "mcmc/priors.h"
+#include "gmcmc/priors.h"
 
 #include <math.h>
 
@@ -31,7 +31,7 @@ static bool init(void * params, va_list list) {
   return (g->alpha > 0.0) && (g->beta > 0.0);
 }
 
-static double sample(const mcmc_rng r, const void * params) {
+static double sample(const gmcmc_rng * r, const void * params) {
   gamma * g = (gamma *)params;
 
   // Numerical Recipes in C++, 3rd edition (section 7.3, page 370)
@@ -44,8 +44,8 @@ static double sample(const mcmc_rng r, const void * params) {
     do {
       // Numerical Recipes in C++, 3rd edition (section 7.3, page 369)
       do {
-        u = mcmc_rng_get_double(r);
-        v = 1.7156 * (mcmc_rng_get_double(r) - 0.5);
+        u = gmcmc_rng_get_double(r);
+        v = 1.7156 * (gmcmc_rng_get_double(r) - 0.5);
         x = u - 0.449871;
         double y = fabs(v) + 0.386595;
         q = x * x + y * (0.19600 * y - 0.25472 * x);
@@ -55,12 +55,12 @@ static double sample(const mcmc_rng r, const void * params) {
     } while (v <= 0.0);
 
     v = v * v * v;
-    u = mcmc_rng_get_double(r);
+    u = gmcmc_rng_get_double(r);
   } while (u > 1.0 - 0.331 * x * x * x * x &&
            log(u) > 0.5 * x * x + a1 * (1.0 - v + log(v)));
 
   return (alpha == g->alpha) ? a1 * v / g->beta :
-         pow(mcmc_rng_get_double(r), 1.0 / g->alpha) * a1 * v / g->beta;
+         pow(gmcmc_rng_get_double(r), 1.0 / g->alpha) * a1 * v / g->beta;
 }
 
 static double evaluate(double x, const void * params) {
@@ -80,7 +80,7 @@ static double evaluate_2nd_order(double x, const void * params) {
   return (x <= 0.0) ? -HUGE_VAL : -(g->alpha - 1.0) / (x * x);
 }
 
-static struct __mcmc_prior_type_st type = { "Gamma", init, sample, evaluate,
-                                            evaluate_1st_order, evaluate_2nd_order, sizeof(gamma) };
+static const struct __gmcmc_prior_type_st type = { "Gamma", init, sample, evaluate,
+                                                   evaluate_1st_order, evaluate_2nd_order, sizeof(gamma) };
 
-const mcmc_prior_type mcmc_prior_gamma = &type;
+const gmcmc_prior_type * gmcmc_prior_gamma = &type;
