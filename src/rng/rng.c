@@ -1,5 +1,4 @@
-#include "gmcmc/rng.h"
-
+#include <gmcmc/rng.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -26,20 +25,20 @@ struct __gmcmc_rng_st {
 gmcmc_error gmcmc_rng_create(gmcmc_rng ** r, const gmcmc_rng_type * type,
                              uint64_t seed) {
   // Check the RNG type passed
-  if (type->name == NULL || type->min >= type->max || type->set == NULL ||
+  if (type->name == NULL ||type->min >= type->max || type->set == NULL ||
       type->get == NULL || type->get_double == NULL) {
     GMCMC_ERROR_HANDLER(GMCMC_ERROR_INVALID_ARGUMENT);
     return GMCMC_ERROR_INVALID_ARGUMENT;
   }
 
   // Allocate space for the RNG
-  if ((*r = malloc(sizeof(struct __gmcmc_rng_st))) == NULL) {
+  if ((*r = calloc(1, sizeof(struct __gmcmc_rng_st))) == NULL) {
     GMCMC_ERROR_HANDLER(GMCMC_ERROR_OUT_OF_MEMORY);
     return GMCMC_ERROR_OUT_OF_MEMORY;
   }
 
-  // Allocate space for a copy of the type and for the state vector
-  if (((*r)->type == malloc(sizeof(gmcmc_rng_type))) == NULL || 
+  // Allocate space for a copy of the RNG type and for the state vector
+  if (((*r)->type  = malloc(sizeof(gmcmc_rng_type))) == NULL ||
       ((*r)->state = malloc(type->size)) == NULL) {
     free((*r)->type);
     free((*r)->state);
@@ -48,7 +47,7 @@ gmcmc_error gmcmc_rng_create(gmcmc_rng ** r, const gmcmc_rng_type * type,
     return GMCMC_ERROR_OUT_OF_MEMORY;
   }
 
-  // Copy the type
+  // Store a copy of the type of RNG created
   (*r)->type = memcpy((*r)->type, type, sizeof(gmcmc_rng_type));
   
   // Seed the RNG to initialise the state vector
@@ -61,22 +60,22 @@ gmcmc_error gmcmc_rng_create(gmcmc_rng ** r, const gmcmc_rng_type * type,
  * Creates a random number generator which is a duplicate of an existing random
  * number generator.
  *
- * @param [out] r  the random number generator to create
- * @param [in]  s  the random number generator to copy
+ * @param [out] r    the random number generator to create
+ * @param [in]  src  the random number generator to copy
  *
  * @return GMCMC_SUCCESS if the prior was created successfully,
  *         GMCMC_ERROR_OUT_OF_MEMORY if there was not enough memory to allocate
  *         the RNG state vector.
  */
-gmcmc_error gmcmc_rng_create_copy(gmcmc_rng ** r, const gmcmc_rng * s) {
-  if ((*r = malloc(sizeof(struct __gmcmc_rng_st))) == NULL) {
+gmcmc_error gmcmc_rng_create_copy(gmcmc_rng ** r, const gmcmc_rng * src) {
+  if ((*r = calloc(1, sizeof(struct __gmcmc_rng_st))) == NULL) {
     GMCMC_ERROR_HANDLER(GMCMC_ERROR_OUT_OF_MEMORY);
     return GMCMC_ERROR_OUT_OF_MEMORY;
   }
 
-  // Allocate space for a copy of the type and for the state vector
-  if (((*r)->type == malloc(sizeof(gmcmc_rng_type))) == NULL || 
-      ((*r)->state = malloc(s->type->size)) == NULL) {
+  // Allocate space for a copy of the RNG type and for the state vector
+  if (((*r)->type  = malloc(sizeof(gmcmc_rng_type))) == NULL ||
+      ((*r)->state = malloc(src->type->size)) == NULL) {
     free((*r)->type);
     free((*r)->state);
     free(*r);
@@ -85,8 +84,8 @@ gmcmc_error gmcmc_rng_create_copy(gmcmc_rng ** r, const gmcmc_rng * s) {
   }
 
   // Copy the type and state vector
-  (*r)->type = memcpy((*r)->type, s->type, sizeof(gmcmc_rng_type));
-  (*r)->state = memcpy((*r)->state, s->state, s->type->size);
+  (*r)->type = memcpy((*r)->type, src->type, sizeof(gmcmc_rng_type));
+  (*r)->state = memcpy((*r)->state, src->state, src->type->size);
 
   return GMCMC_SUCCESS;
 }
@@ -96,32 +95,30 @@ gmcmc_error gmcmc_rng_create_copy(gmcmc_rng ** r, const gmcmc_rng * s) {
  * If the source and destination RNGs have types with different sizes of state
  * this function will resize the destination RNG state vector.
  * 
- * @param [out] r  the destination RNG
- * @param [in]  s  the source RNG
+ * @param [out] r    the destination RNG
+ * @param [in]  src  the source RNG
  *
  * @return GMCMC_SUCCESS if the RNG was created successfully,
  *         GMCMC_ERROR_OUT_OF_MEMORY if there was not enough memory to allocate
  *         the RNG state vector.
  */
-gmcmc_error gmcmc_rng_copy(gmcmc_rng * r, const gmcmc_rng * s) {
+gmcmc_error gmcmc_rng_copy(gmcmc_rng * r, const gmcmc_rng * src) {
   // If source == destination return now
-  if (r == s)
+  if (r == src)
     return GMCMC_SUCCESS;
   
   // If the RNGs have different sizes of state vectors
-  if (r->type->size != s->type->size) {
+  if (r->type->size != src->type->size) {
     free(r->state);     // Free existing state vector
 
     // Allocate space for new state vector
-    if ((r->state = malloc(s->type->size)) == NULL) {
+    if ((r->state = malloc(src->type->size)) == NULL)
       GMCMC_ERROR_HANDLER(GMCMC_ERROR_OUT_OF_MEMORY);
-      return GMCMC_ERROR_OUT_OF_MEMORY;
-    }
   }
 
   // Copy the type and state vector
-  r->type = memcpy(r->type, s->type, sizeof(gmcmc_rng_type));
-  r->state = memcpy(r->state, s->state, s->type->size);
+  r->type = memcpy(r->type, src->type, sizeof(gmcmc_rng_type));
+  r->state = memcpy(r->state, src->state, src->type->size);
 
   return GMCMC_SUCCESS;
 }

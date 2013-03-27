@@ -1,4 +1,4 @@
-#include "gmcmc/rng.h"
+#include <gmcmc/rng.h>
 #include <math.h>
 #include <CUnit/CUnit.h>
 #include <CUnit/Basic.h>
@@ -76,12 +76,12 @@ static void test_rng_get() {
   uint64_t x[100000];
   for (size_t i = 0; i < 100000; i++) {
     x[i] = gmcmc_rng_get(rng);
-    
+
     // Test min/max
     CU_ASSERT(x[i] >= gmcmc_rng_mt19937_64->min);
     CU_ASSERT(x[i] <= gmcmc_rng_mt19937_64->max);
   }
-  
+
   // Test mean
   uint64_t actual = mean(x, 100000);
   uint64_t expected = UINT64_MAX >> 1;
@@ -94,24 +94,24 @@ static void test_rng_get_double() {
   gmcmc_rng_set(rng, 0);
 
   // Test real generation
-  double mean = 0.0, variance = 0.0;
+  double mean = 0.0, var = 0.0;
   for (size_t i = 0; i < 100000; i++) {
     double x = gmcmc_rng_get_double(rng);
-    
+
     // Test min/max
     CU_ASSERT(x < 1.0);
     CU_ASSERT(x > 0.0);
 
-    // Test mean and variance
     // Knuth - The Art of Computer Programming (vol 2. 1998 p.232)
     double mprev = mean;
     mean += (x - mean) / ((double)i + 1.0);
-    variance += (x - mean) * (x - mprev);
+    var += (x - mean) * (x - mprev);
   }
-  variance /= 1.e5;
+  var /= 1.e5;
 
-  CU_ASSERT_DOUBLE_EQUAL(mean, 0.5, 0.00169);         // 1/2 (a + b)
-  CU_ASSERT_DOUBLE_EQUAL(variance, 0.08333333, 0.0003); // 1/12 (b - a)^2
+  // Test mean and variance
+  CU_ASSERT_DOUBLE_EQUAL(mean, 0.5, 0.00169);           // 1/2 (a + b)
+  CU_ASSERT_DOUBLE_EQUAL(var, 0.08333333, 0.0003);      // 1/12 (b - a)^2
 }
 
 // Utility functions

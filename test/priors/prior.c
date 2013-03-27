@@ -1,7 +1,7 @@
+#include <gmcmc/error.h>
+#include <gmcmc/priors.h>
 #include <CUnit/CUnit.h>
 #include <CUnit/Basic.h>
-#include "gmcmc/error.h"
-#include "gmcmc/rng.h"
 
 // Test functions
 static void test_prior_create();
@@ -84,7 +84,7 @@ int main() {
   // Return the number of test failures
   return (int)failures;
 }
-                                       
+
 // Dummy prior type
 static bool init(void * v, va_list ap) {
   double * d = (double *)v;
@@ -98,9 +98,9 @@ static double sample(const gmcmc_rng * r, const void * v) {
   (void)r;
   return ((double *)v)[0];
 }
-static double evaluate(double x, const void * v) { return ((double *)v)[1]; }
-static double evaluate_1st_order(double x, const void * v) { return ((double *)v)[2]; }
-static double evaluate_2nd_order(double x, const void * v) { return ((double *)v)[3]; }
+static double evaluate(double x, const void * v) { (void)x; return ((double *)v)[1]; }
+static double evaluate_1st_order(double x, const void * v) { (void)x; return ((double *)v)[2]; }
+static double evaluate_2nd_order(double x, const void * v) { (void)x; return ((double *)v)[3]; }
 
 static const gmcmc_prior_type type = { "test",
                                        init,
@@ -169,11 +169,11 @@ static void test_prior_sample() {
   // Test prior sample function (returns 1st parameter)
   gmcmc_prior * prior;
   CU_ASSERT(gmcmc_prior_create(&prior, &type, 0.0, 1.0, 2.0, 3.0) == GMCMC_SUCCESS);
-  CU_ASSERT_EQUAL(gmcmc_prior_sample(NULL, prior), 0.0);
+  CU_ASSERT_EQUAL(gmcmc_prior_sample(prior, NULL), 0.0);
   gmcmc_prior_destroy(prior);
   
   CU_ASSERT(gmcmc_prior_create(&prior, &type, 1.0, 1.1, 1.2, 1.3) == GMCMC_SUCCESS);
-  CU_ASSERT_EQUAL(gmcmc_prior_sample(NULL, prior), 1.0);
+  CU_ASSERT_EQUAL(gmcmc_prior_sample(prior, NULL), 1.0);
   gmcmc_prior_destroy(prior);
 }
 
@@ -181,11 +181,11 @@ static void test_prior_evaluate() {
   // Test evaluate function (returns 2nd parameter)
   gmcmc_prior * prior;
   CU_ASSERT(gmcmc_prior_create(&prior, &type, 0.0, 1.0, 2.0, 3.0) == GMCMC_SUCCESS);
-  CU_ASSERT_EQUAL(gmcmc_prior_evaluate(NULL, prior), 1.0);
+  CU_ASSERT_EQUAL(gmcmc_prior_evaluate(prior, 0.0), 1.0);
   gmcmc_prior_destroy(prior);
   
   CU_ASSERT(gmcmc_prior_create(&prior, &type, 1.0, 1.1, 1.2, 1.3) == GMCMC_SUCCESS);
-  CU_ASSERT_EQUAL(gmcmc_prior_evaluate(NULL, prior), 1.1);
+  CU_ASSERT_EQUAL(gmcmc_prior_evaluate(prior, 0.0), 1.1);
   gmcmc_prior_destroy(prior);
 }
 
@@ -193,22 +193,22 @@ static void test_prior_evaluate_1st_order() {
   // Test evaluate function (returns 3rd parameter)
   gmcmc_prior * prior;
   CU_ASSERT(gmcmc_prior_create(&prior, &type, 0.0, 1.0, 2.0, 3.0) == GMCMC_SUCCESS);
-  CU_ASSERT_EQUAL(gmcmc_prior_evaluate_1st_order(NULL, prior), 3.0);
+  CU_ASSERT_EQUAL(gmcmc_prior_evaluate_1st_order(prior, 0.0), 2.0);
   gmcmc_prior_destroy(prior);
   
   CU_ASSERT(gmcmc_prior_create(&prior, &type, 1.0, 1.1, 1.2, 1.3) == GMCMC_SUCCESS);
-  CU_ASSERT_EQUAL(gmcmc_prior_evaluate_1st_order(NULL, prior), 1.2);
+  CU_ASSERT_EQUAL(gmcmc_prior_evaluate_1st_order(prior, 0.0), 1.2);
   gmcmc_prior_destroy(prior);
 }
 
-static void test_prior_evaluate() {
+static void test_prior_evaluate_2nd_order() {
   // Test evaluate function (returns 4th parameter)
   gmcmc_prior * prior;
   CU_ASSERT(gmcmc_prior_create(&prior, &type, 0.0, 1.0, 2.0, 3.0) == GMCMC_SUCCESS);
-  CU_ASSERT_EQUAL(gmcmc_prior_evaluate_2nd_order(NULL, prior), 3.0);
+  CU_ASSERT_EQUAL(gmcmc_prior_evaluate_2nd_order(prior, 0.0), 3.0);
   gmcmc_prior_destroy(prior);
   
   CU_ASSERT(gmcmc_prior_create(&prior, &type, 1.0, 1.1, 1.2, 1.3) == GMCMC_SUCCESS);
-  CU_ASSERT_EQUAL(gmcmc_prior_evaluate_2nd_order(NULL, prior), 1.3);
+  CU_ASSERT_EQUAL(gmcmc_prior_evaluate_2nd_order(prior, 0.0), 1.3);
   gmcmc_prior_destroy(prior);
 }

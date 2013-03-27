@@ -1,10 +1,9 @@
 #ifndef GMCMC_RNG_H
 #define GMCMC_RNG_H
 
+#include <gmcmc/error.h>
 #include <stddef.h>
 #include <stdint.h>
-
-#include "error.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,8 +44,8 @@ gmcmc_error gmcmc_rng_create(gmcmc_rng **, const gmcmc_rng_type *, uint64_t);
  * Creates a random number generator which is a duplicate of an existing random
  * number generator.
  *
- * @param [out] r  the random number generator to create
- * @param [in]  s  the random number generator to copy
+ * @param [out] r    the random number generator to create
+ * @param [in]  src  the random number generator to copy
  *
  * @return GMCMC_SUCCESS if the prior was created successfully,
  *         GMCMC_ERROR_OUT_OF_MEMORY if there was not enough memory to allocate
@@ -59,8 +58,8 @@ gmcmc_error gmcmc_rng_create_copy(gmcmc_rng **, const gmcmc_rng *);
  * If the source and destination RNGs have types with different sizes of state
  * this function will resize the destination RNG state vector.
  * 
- * @param [out] r  the destination RNG
- * @param [in]  s  the source RNG
+ * @param [out] r    the destination RNG
+ * @param [in]  src  the source RNG
  *
  * @return GMCMC_SUCCESS if the RNG was created successfully,
  *         GMCMC_ERROR_OUT_OF_MEMORY if there was not enough memory to allocate
@@ -106,7 +105,7 @@ double gmcmc_rng_get_double(const gmcmc_rng *);
 extern const gmcmc_rng_type * gmcmc_rng_mt19937_64;
 
 /*! double-precision SIMD-oriented fast Mersenne Twister */
-extern const gmcmc_rng_type * gmcmc_rng_dsfmt;
+extern const gmcmc_rng_type * gmcmc_rng_dsfmt19937;
 
 #ifdef __cplusplus
 }

@@ -1,5 +1,4 @@
-#include "gmcmc/priors.h"
-
+#include <gmcmc/priors.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -34,12 +33,12 @@ gmcmc_error gmcmc_prior_create(gmcmc_prior ** p, const gmcmc_prior_type * type, 
   }
 
   // Allocate space for the prior
-  if ((*p = malloc(sizeof(struct __gmcmc_prior_st))) == NULL) {
+  if ((*p = calloc(1, sizeof(struct __gmcmc_prior_st))) == NULL) {
     GMCMC_ERROR_HANDLER(GMCMC_ERROR_OUT_OF_MEMORY);
     return GMCMC_ERROR_OUT_OF_MEMORY;
   }
 
-  // Allocate space for a copy of the type and for the parameter vector
+  // Allocate space for a copy of the prior type and for the parameter vector
   if (((*p)->type = malloc(sizeof(gmcmc_prior_type))) == NULL ||
       ((*p)->params = malloc(type->n)) == NULL) {
     free((*p)->type);
@@ -49,7 +48,7 @@ gmcmc_error gmcmc_prior_create(gmcmc_prior ** p, const gmcmc_prior_type * type, 
     return GMCMC_ERROR_OUT_OF_MEMORY;
   }
 
-  // Copy the type of prior created
+  // Store a pointer to the type of prior created
   (*p)->type = memcpy((*p)->type, type, sizeof(gmcmc_prior_type));
 
   // Initialise the parameter vector
@@ -73,23 +72,23 @@ gmcmc_error gmcmc_prior_create(gmcmc_prior ** p, const gmcmc_prior_type * type, 
 /*!
  * Creates a prior distribution which is a duplicate of an existing prior.
  *
- * @param [out] p  the prior distribution to create
- * @param [in]  q  the prior distribution to copy
+ * @param [out] p    the prior distribution to create
+ * @param [in]  src  the prior distribution to copy
  *
  * @return GMCMC_SUCCESS if the prior was created successfully,
  *         GMCMC_ERROR_OUT_OF_MEMORY if there was not enough memory to allocate
  *         the parameter vector.
  */
-gmcmc_error gmcmc_prior_create_copy(gmcmc_prior ** p, const gmcmc_prior * q) {
+gmcmc_error gmcmc_prior_create_copy(gmcmc_prior ** p, const gmcmc_prior * src) {
   // Allocate space for the prior
-  if ((*p = malloc(sizeof(struct __gmcmc_prior_st))) == NULL) {
+  if ((*p = calloc(1, sizeof(struct __gmcmc_prior_st))) == NULL) {
     GMCMC_ERROR_HANDLER(GMCMC_ERROR_OUT_OF_MEMORY);
     return GMCMC_ERROR_OUT_OF_MEMORY;
   }
 
-  // Allocate space for a copy of the type and for the parameter vector
+  // Allocate space for a copy of the type and parameter vector
   if (((*p)->type = malloc(sizeof(gmcmc_prior_type))) == NULL ||
-      ((*p)->params = malloc(type->n)) == NULL) {
+      ((*p)->params = malloc(src->type->n)) == NULL) {
     free((*p)->type);
     free((*p)->params);
     free(*p);
@@ -97,9 +96,9 @@ gmcmc_error gmcmc_prior_create_copy(gmcmc_prior ** p, const gmcmc_prior * q) {
     return GMCMC_ERROR_OUT_OF_MEMORY;
   }
 
-  // Copy the prior type and parameter vector
-  (*p)->type = memcpy((*p)->type, q->type, sizeof(gmcmc_prior_type));
-  (*p)->params = memcpy((*p)->params, q->params, q->type->n);
+  // Copy the type and parameter vector
+  (*p)->type = memcpy((*p)->type, src->type, sizeof(gmcmc_prior_type));
+  (*p)->params = memcpy((*p)->params, src->params, src->type->n);
 
   return GMCMC_SUCCESS;
 }
@@ -109,32 +108,34 @@ gmcmc_error gmcmc_prior_create_copy(gmcmc_prior ** p, const gmcmc_prior * q) {
  * destination priors have types which have different numbers of parameters this
  * function will resize the destination prior parameter vector.
  * 
- * @param [out] p  the destination prior distribution
- * @param [in]  q  the source prior distribution
+ * @param [out] p    the destination prior distribution
+ * @param [in]  src  the source prior distribution
  *
  * @return GMCMC_SUCCESS if the prior was created successfully,
  *         GMCMC_ERROR_OUT_OF_MEMORY if there was not enough memory to allocate
  *         the parameter vector.
  */
-gmcmc_error gmcmc_prior_copy(gmcmc_prior * p, const gmcmc_prior * q) {
+gmcmc_error gmcmc_prior_copy(gmcmc_prior * p, const gmcmc_prior * src) {
   // If source == destination return now
-  if (p == q)
+  if (p == src)
     return GMCMC_SUCCESS;
   
   // If the priors have different sizes of parameter vectors
-  if (p->type->n != q->type->n) {
-    free(p->params);     // Free existing parameter vector
-
+  if (p->type->n != src->type->n) {
     // Allocate space for new parameter vector
-    if ((p->params = malloc(q->type->n)) == NULL) {
+    void * params;
+    if ((params = malloc(src->type->n)) == NULL) {
       GMCMC_ERROR_HANDLER(GMCMC_ERROR_OUT_OF_MEMORY);
       return GMCMC_ERROR_OUT_OF_MEMORY;
     }
+
+    free(p->params);    // Free existing parameter vector
+    p->params = params; // Update parameter vector
   }
 
   // Copy the type and parameter vector
-  p->type = memcpy(p->type, q->type, sizeof(gmcmc_prior_type));
-  p->params = memcpy(p->params, q->params, q->type->n);
+  p->type = memcpy(p->type, src->type, sizeof(gmcmc_prior_type));
+  p->params = memcpy(p->params, src->params, src->type->n);
 
   return GMCMC_SUCCESS;
 }

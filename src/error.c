@@ -1,12 +1,12 @@
-#include "gmcmc/error.h"
+#include <gmcmc/error.h>
 
 #include <stdio.h>
 
 /*!
  * Default error handler.
- * 
+ *
  * Prints a textual description of the error to the console.
- * 
+ *
  * @param [in] error  the error code
  * @param [in] call   the function call/expression that caused the error (may be
  *                      NULL)

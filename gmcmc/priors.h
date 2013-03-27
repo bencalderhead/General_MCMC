@@ -1,9 +1,10 @@
 #ifndef GMCMC_PRIORS_H
 #define GMCMC_PRIORS_H
 
+#include <gmcmc/error.h>
+#include <gmcmc/rng.h>
 #include <stdbool.h>
 #include <stdarg.h>
-#include "rng.h"
 
 #ifdef __cplusplus
 extern "C" {

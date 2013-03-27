@@ -1,5 +1,4 @@
-#include "gmcmc/priors.h"
-
+#include <gmcmc/priors.h>
 #include <math.h>
 
 // sqrt(2.0 * M_PI)

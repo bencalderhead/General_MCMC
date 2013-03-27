@@ -1,7 +1,7 @@
+#include <gmcmc/error.h>
+#include <gmcmc/rng.h>
 #include <CUnit/CUnit.h>
 #include <CUnit/Basic.h>
-#include "gmcmc/error.h"
-#include "gmcmc/rng.h"
 
 // Test functions
 static void test_rng_create();

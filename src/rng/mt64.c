@@ -1,4 +1,4 @@
-#include "gmcmc/rng.h"
+#include <gmcmc/rng.h>
 
 #define NN 312
 #define MM 156

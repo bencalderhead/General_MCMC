@@ -1,4 +1,49 @@
-#include "ion.h"
+#include <gmcmc/ion.h>#ifndef GMCMC_ION_H
+#define GMCMC_ION_H
+
+#include <gmcmc/error.h>
+
+/*!
+ * ION model structure.
+ */
+typedef struct __ion_model_st {
+  int open, closed;                                     /*!< Number of open and closed states */
+  void (*update_q)(const double *, double *, size_t);   /*!< Function to update Q matrix based on current parameter values */
+} gmcmc_ion_model;
+
+/**
+ * ION model type.
+ */
+extern const gmcmc_model_type * gmcmc_ion_model_type;
+
+gmcmc_error gmcmc_ion_model_create(gmcmc_ion_model **, int, int, void (*)(const double *, double *, size_t));
+void gmcmc_ion_model_destroy(gmcmc_ion_model *);
+
+/*!
+ * Calculates the log likelihood of the ion channel data for the current parameter values.
+ *
+ * @param [in]  model  the model
+ * @param [out] chain  the chain
+ *
+ * @return GMCMC_SUCCESS on success.
+ */
+gmcmc_error gmcmc_ion_evaluate_mh(const gmcmc_model *, gmcmc_chain *);
+
+/**
+ * Calculates the proposal mean and covariance based on the current parameter
+ * values.
+ *
+ * @param [in]  model  the model
+ * @param [in]  chain  the chain
+ * @param [out] mean   the proposal mean
+ * @param [out] cov    the proposal covariance
+ *
+ * @return GMCMC_SUCCESS on success.
+ */
+gmcmc_error gmcmc_ion_proposal_mh(const gmcmc_model *, const gmcmc_chain *, double *, double *);
+
+#endif
+
 
 #include <stdlib.h>
 #include <math.h>
